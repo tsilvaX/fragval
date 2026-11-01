@@ -1,0 +1,13 @@
+services:
+  court:
+    build: .
+    restart: unless-stopped
+    env_file: .env.local
+    environment:
+      DATABASE_PATH: /app/data/frag-court.sqlite
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - court-data:/app/data
+volumes:
+  court-data:

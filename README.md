@@ -1,0 +1,105 @@
+# FRAG COURT
+
+**Big talk. Hard numbers.** A private VALORANT statistics dashboard for a small friend group, with an editorial scoreboard design and a very opinionated court.
+
+![FRAG COURT desktop](artifacts/desktop-production.png)
+
+## Run locally
+
+Requires **Node.js 22.13+** (Node 24 LTS recommended).
+
+```sh
+npm ci
+cp .env.example .env.local
+npm run dev
+```
+
+On Windows PowerShell:
+
+```powershell
+npm.cmd ci
+Copy-Item .env.example .env.local
+npm.cmd run dev
+```
+
+Open **http://127.0.0.1:3000**. No account or API key is needed in fixture mode. The 36 fictional matches are deterministic; refreshing does not manufacture new results. SQLite is created automatically in `data/`.
+
+## What works
+
+- Overview: sortable player cards; weighted ACS, K/D, ADR, win rate, hit-based HS%, damage delta, W/L and K/D/A totals.
+- Head to head: zero-based comparative bars, signed damage deltas, a side-by-side table, ACS trends, and agent leaders with a five-match threshold.
+- The Court: full-lobby Bottom Frag King, Match MVP, kill leader, friend-group carry and liability. Inspect each player's contributing matches.
+- History: unique shared matches, player/map/result filters, pagination, and ten-player scoreboards with tracked-friend highlights.
+- Agents: weighted per-agent aggregates, sample indicators and cross-friend comparisons.
+- Armory: actual all-weapons hit-region counts. Weapon-specific metrics explicitly remain unavailable.
+- Refresh: persistent SQLite cache, ID deduplication, PUUID resolution cache, cross-process locking, provider retries and rate-limit handling.
+- Friends-only production access, reduced-motion support, mobile layouts, data coverage details and JSON export.
+
+## Live data
+
+The live adapter uses documented **HenrikDev v4 match details**, v1 stored history, v2 account resolution and v3 MMR. Add **3–4 authorized, opted-in Riot accounts** in [`src/config/players.ts`](src/config/players.ts), then configure `.env.local`:
+
+```dotenv
+DATA_PROVIDER=henrik
+HENRIK_API_KEY=your_server_only_key
+HENRIK_AUTHORIZED=true
+VALORANT_REGION=na
+VALORANT_PLATFORM=pc
+```
+
+Restart the server, then click **REFRESH STATS**. PUUIDs are cached after initial resolution; you may also configure them directly. Current act IDs are never hardcoded. Act dates and type come from VALORANT-API and the ID is verified against provider content before ingestion. Unknown or expired acts fail closed.
+
+**Authorization matters:** an unofficial API key alone does not establish permission. HenrikDev's dashboard terms and Riot's applicable requirements must permit the actual deployment and all tracked players must supply the required opt-in. `HENRIK_AUTHORIZED` records the operator's acknowledgement; it is not OAuth or proof of authorization. Live requests have not been tested with a real key. See [`docs/PROVIDERS.md`](docs/PROVIDERS.md).
+
+Riot's official adapter is an explicit future boundary, not a working integration. Riot currently excludes private personal applications, and approved integrations require a production key and RSO. Selecting `riot` displays that limitation and never silently falls back to fictional data.
+
+**Unavailable metrics:** per-weapon head/body/leg hit percentages, per-weapon damage distribution and weapon-specific performance. Current rank and global hit/damage stats can also be unavailable for individual provider responses. Missing metrics are not synthesized. Retrieved history may have holes; live aggregates are never labeled complete act totals.
+
+## Verification
+
+```sh
+npm test
+npm run typecheck
+npx playwright install chromium
+npm run test:e2e
+npm run build
+```
+
+The Playwright suite starts the local development server automatically if port 3000 is unused. It runs desktop and mobile flows, checks navigation, filters, comparisons, scoreboard expansion, award evidence, agent switches, Armory availability, persistent refresh results, hash links, reduced motion and cross-origin rejection. Screenshots are saved in `artifacts/`.
+
+The unit suite tests weighted math, all award types, ties, single-friend lobbies, shared/duplicate matches, incomplete lobbies, act boundaries, missing statistics, draws, provider normalization and privacy, bounded rate-limit behavior, SQLite deduplication, provider/act isolation, locks, identity resolution and password comparison.
+
+The completed validation results and remaining external limitations are recorded in [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
+
+## Share with friends
+
+Use a **single Node server or Docker container with a persistent disk**. The current local SQLite architecture needs a writable, durable filesystem. A stateless or static-only host cannot preserve its cache without adapting storage.
+
+1. Set a long random `COURT_PASSWORD` in the host's environment. Production refuses access without it.
+2. Set `DATA_PROVIDER` and live credentials only on the server. Keep the password/key out of Git and client environment variables.
+3. Mount persistent storage at `/app/data` (Docker) or set `DATABASE_PATH` to a durable path.
+4. Build and run:
+
+```sh
+npm ci
+npm run build
+npm start
+```
+
+The browser's HTTP Basic prompt accepts any username and your shared court password. Use **HTTPS**, ideally with additional host access controls. Share the URL and password privately. There are no user accounts or Riot login implemented; the shared-password gate does not replace provider-required player opt-in.
+
+Docker alternative:
+
+```sh
+docker compose up --build -d
+```
+
+Set `COURT_PASSWORD` and provider values in `.env.local` first. Place the container behind an HTTPS reverse proxy. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for persistence, backups, proxy configuration and scale limits.
+
+## Architecture & design
+
+Next.js App Router + TypeScript + React; handcrafted CSS tokens and layouts; custom SVG charts; `node:sqlite` for persistence; Zod at provider boundaries; Node's test runner; Playwright. Custom CSS is used instead of a component kit or Tailwind to keep the visual system direct and dependency-light. All fonts and artwork are local at runtime.
+
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) explains award and aggregate rules. [`docs/PROVIDERS.md`](docs/PROVIDERS.md) records the researched endpoints, limitations and policy sources. [`public/ASSET-CREDITS.md`](public/ASSET-CREDITS.md) lists artwork and font attribution.
+
+This project is not endorsed by Riot Games. VALORANT and its assets belong to Riot Games.
