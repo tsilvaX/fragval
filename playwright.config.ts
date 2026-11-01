@@ -10,7 +10,6 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "retain-on-failure",
-    httpCredentials: { username: "friend", password: "court-e2e-password" },
   },
   projects: [
     {
@@ -34,7 +33,6 @@ export default defineConfig({
     env: {
       DATA_PROVIDER: "fixture",
       DATABASE_PATH: "data/e2e.sqlite",
-      COURT_PASSWORD: "court-e2e-password",
     },
   },
 });

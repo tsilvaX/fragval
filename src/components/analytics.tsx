@@ -188,7 +188,7 @@ export function Overview({
             We brought the receipts.
           </p>
           <div className="hero-stamp">
-            PRIVATE COURT
+            SQUAD COURT
             <br />
             <strong>
               {String(data.friends.length).padStart(2, "0")} MEMBERS

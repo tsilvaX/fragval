@@ -8,7 +8,7 @@ import {
   Gavel,
   Info,
   LoaderCircle,
-  LockKeyhole,
+  Users,
   RefreshCw,
   Settings2,
   WifiOff,
@@ -166,8 +166,8 @@ export function CourtApp() {
           </a>
           <div className="header-right">
             <span className="private-label">
-              <LockKeyhole size={12} />
-              FRIENDS ONLY
+              <Users size={12} />
+              SQUAD STATS
             </span>
             <button
               className="icon-button settings"
@@ -224,7 +224,7 @@ export function CourtApp() {
             <span>COMPETITIVE</span>
             <span className="context-slash">/</span>
             <span>
-              {data?.mode === "fixture" ? "FICTIONAL FRIENDS" : "PRIVATE SQUAD"}
+              {data?.mode === "fixture" ? "FICTIONAL FRIENDS" : "YOUR SQUAD"}
             </span>
           </div>
           <button onClick={() => setModal("coverage")} className="context-sync">
@@ -385,11 +385,10 @@ export function CourtApp() {
                 approval and RSO are in place. A key alone does not authorize
                 it.
               </p>
-              <h3>Keep it friends only</h3>
+              <h3>Open and play</h3>
               <p>
-                Set <code>COURT_PASSWORD</code> before deployment. Production
-                access is blocked without it. Share the password privately; any
-                username works. Use HTTPS.
+                No password or sign-in is required. Open the app and use the
+                dashboard. The data-provider API key stays on the server.
               </p>
             </div>
           ) : modal === "coverage" ? (
@@ -433,8 +432,8 @@ export function CourtApp() {
           ) : (
             <div className="prose">
               <p>
-                A private VALORANT statistics court for a very opinionated
-                friend group. Big talk deserves hard numbers.
+                A VALORANT statistics court for a very opinionated friend group.
+                Big talk deserves hard numbers.
               </p>
               <h3>Assets & typography</h3>
               <p>

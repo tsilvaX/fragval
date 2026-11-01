@@ -22,7 +22,7 @@
 - An atomic SQLite UPSERT lock prevents overlapping refreshes across workers on the same disk. Its thirty-minute crash lease covers bounded page/detail work; this app is intended for a single instance. A fifteen-second success cooldown avoids button bursts. Cached data remains visible on refresh failures.
 - History retention, gaps in materialized provider history and the safety cap prevent any full-act completeness guarantee. The UI always states retrieved-match coverage.
 - Provider errors avoid logging response bodies or credentials. Source API keys never enter a client component. Untracked names and PUUIDs are replaced before persistence.
-- The page shell loads records via an authenticated API rather than embedding private records into a static page. The Next.js proxy protects page/API requests with a server-configured shared password. Production fails closed if the password is absent. This is a small group access gate, not a player-identity/RSO system.
+- The page shell loads records through same-origin API routes. Visitors open the page, view records and refresh without authentication. There is no password proxy or login flow. Provider credentials remain server-only; refresh still validates request origin, rate limits provider calls and prevents overlapping synchronization.
 
 ## Aggregates
 
@@ -56,4 +56,4 @@ Dark charcoal surfaces, warm off-white text, orange and lime accents, horizontal
 
 ## Scope limits
 
-Live provider access, retention and account authorization cannot be validated without the operator's authorized key and player opt-in. Weapon-specific information is deliberately unavailable; global hits are shown separately. Shared-password authentication has no individual users, password reset or Riot OAuth. Use a persistent single-server deployment, HTTPS and an access-controlled host for this private group.
+Live provider access, retention and account authorization depend on the operator's authorized key and player opt-in. Weapon-specific information is deliberately unavailable; global hits are shown separately. Visitor access requires no login or password. Use a persistent single-server deployment and HTTPS. Riot OAuth is not implemented.

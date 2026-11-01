@@ -106,15 +106,13 @@ async function main() {
     VALORANT_REGION: "auto",
     VALORANT_PLATFORM: "pc",
   };
-  if (!/^\s*COURT_PASSWORD\s*=\s*["']?[^\s"'#]+/m.test(original))
-    updates.COURT_PASSWORD = randomBytes(24).toString("base64url");
   const temporary = `.env.local.${randomBytes(8).toString("hex")}.tmp`;
   await writeFile(temporary, updateEnvironment(original, updates), {
     mode: 0o600,
   });
   await rename(temporary, ".env.local");
   console.log(
-    "Key validated and saved. No secret values were printed.\nRestart the app, open http://127.0.0.1:3000 and refresh.\nYour private court password is stored in .env.local; any username works.",
+    "Key validated and saved. No secret values were printed.\nRestart the app, open http://127.0.0.1:3000 and refresh. No sign-in or password is required.",
   );
 }
 if (

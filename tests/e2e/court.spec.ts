@@ -46,7 +46,9 @@ test("the complete court: navigation, comparisons, evidence, scoreboards, agents
 }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  const response = await page.goto("/");
+  expect(response?.status()).toBe(200);
+  expect(response?.headers()["www-authenticate"]).toBeUndefined();
   await expect(page.getByRole("heading", { name: /BIG TALK/ })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   await expect(page.locator(".player-card")).toHaveCount(4);
@@ -147,7 +149,9 @@ test("the complete court: navigation, comparisons, evidence, scoreboards, agents
   await page
     .getByRole("button", { name: "Court settings and data setup" })
     .click();
-  await expect(page.getByRole("dialog")).toContainText("COURT_PASSWORD");
+  await expect(page.getByRole("dialog")).toContainText(
+    "No password or sign-in is required.",
+  );
   await page.getByRole("button", { name: "Close dialog" }).click();
   expect(
     await page.evaluate(

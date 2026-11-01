@@ -7,13 +7,13 @@ Validated locally on Windows with Node 26.13.0 and Next.js 16.4.3. CI targets No
 | Boundary | Result | Evidence |
 | --- | --- | --- |
 | TypeScript | Passed | `npm run typecheck` |
-| Statistics, provider contracts, cache, setup and service | 33 tests passed | `npm test` |
+| Statistics, provider contracts, cache, setup and service | 32 tests passed | `npm test` |
 | Browser flows | 9 passed | `npm run test:e2e`; one duplicate mobile width-matrix test intentionally skipped |
 | Production compilation | Passed, no build warnings | `npm run build` |
-| Production access without configured password | Blocked as intended | HTTP 503 |
-| Configured password, unauthenticated visitor | Challenged as intended | HTTP 401 |
-| Authenticated page and API | Passed | HTTP 200; 36 unique fixtures returned |
-| Authenticated same-origin refresh | Passed | HTTP 200; cached fixtures preserved |
+| Direct production access | Passed | HTTP 200 without credentials or a WWW-Authenticate challenge |
+| Legacy password setting | Ignored as intended | Direct access still works if an old COURT_PASSWORD environment value remains |
+| Direct page and API | Passed | HTTP 200; 36 unique fixtures returned without credentials |
+| Direct same-origin refresh | Passed | HTTP 200; cached fixtures preserved without credentials |
 | Browser console on production page | Passed | No page errors or console errors |
 | Real HenrikDev connection | Passed | All four Riot IDs resolved; current ranks loaded |
 | Real current-act history | Passed | 61 unique supported Competitive matches ingested into the local cache |
@@ -48,6 +48,6 @@ Screenshots captured and visually inspected:
 
 A real key was supplied and validated locally, and the operator confirmed the four account owners' consent. The retrieved current-act sample contains 39 matches for Mini Wo0t, 19 for HomelessSlayer94, 20 for kotoris kitten and 49 for kotooriiii; shared matches are stored once, for 61 unique matches total. The provider's available stored history was traversed until no retrieval-budget warning remained. This is still not a completeness guarantee for the entire act: HenrikDev's materialized history can have gaps.
 
-The key, generated court password, PUUID cache and actual match cache remain in ignored local files. They are not pushed to GitHub. Fresh deployments must configure server secrets and a durable disk. Riot's official integration is intentionally unavailable pending approval and RSO implementation. Weapon-specific metrics are unavailable.
+The API key, PUUID cache and actual match cache remain in ignored local files. They are not pushed to GitHub. Fresh deployments must configure the server's provider key and a durable disk. Visitors do not supply any credentials. Riot's official integration is intentionally unavailable pending approval and RSO implementation. Weapon-specific metrics are unavailable.
 
-Docker configuration is provided but a Docker build was not run on this host. No public hosting deployment was created; the repository contains Node/Docker deployment instructions for a private persistent-disk service.
+Docker configuration is provided but a Docker build was not run on this host. No public hosting deployment was created; the repository contains Node/Docker deployment instructions for a persistent-disk service.

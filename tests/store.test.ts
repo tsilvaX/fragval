@@ -13,7 +13,6 @@ import {
   releaseLock,
   resolveIdentity,
 } from "../src/lib/store";
-import { validPassword } from "../src/lib/access";
 const directory = mkdtempSync(join(tmpdir(), "frag-court-tests-"));
 process.env.DATABASE_PATH = join(directory, "test.sqlite");
 test("SQLite deduplicates match IDs, keeps provider namespaces separate, and filters act", async (t) => {
@@ -61,9 +60,4 @@ test("SQLite deduplicates match IDs, keeps provider namespaces separate, and fil
     "immutable-puuid",
   );
   assert.equal(calls, 1);
-});
-test("private court passwords are compared correctly", () => {
-  assert.equal(validPassword("correct", "correct"), true);
-  assert.equal(validPassword("wrong", "correct"), false);
-  assert.equal(validPassword("", "correct"), false);
 });

@@ -1,6 +1,6 @@
 # FRAG COURT
 
-**Big talk. Hard numbers.** A private VALORANT statistics dashboard for a small friend group, with an editorial scoreboard design and a very opinionated court.
+**Big talk. Hard numbers.** A VALORANT statistics dashboard for a small friend group, with an editorial scoreboard design and a very opinionated court.
 
 ![FRAG COURT live dashboard](artifacts/live-desktop.png)
 
@@ -22,7 +22,7 @@ npm.cmd run setup:live
 npm.cmd run dev
 ```
 
-Open **http://127.0.0.1:3000**. The four real accounts below are already configured. The secure setup command validates your HenrikDev key, saves it only in ignored `.env.local`, enables live mode and automatic region detection, and generates a private court password if you have not set one. Any username works in the browser’s password prompt; your password is in `.env.local`.
+Open **http://127.0.0.1:3000** and use the app directly. No login, username or password is required. The four real accounts below are already configured. The secure setup command validates your server's HenrikDev key, saves it only in ignored `.env.local`, and enables live mode and automatic region detection. Visitors never enter the provider key.
 
 If you do not have a key yet, run `npm run dev` and use the connection screen. The complete offline exhibition remains available at **http://127.0.0.1:3000/?demo=1** without API credentials. Its 36 fictional matches are deterministic and are never assigned to your real accounts. SQLite is created automatically in `data/`.
 
@@ -35,7 +35,7 @@ If you do not have a key yet, run `npm run dev` and use the connection screen. T
 - Agents: weighted per-agent aggregates, sample indicators and cross-friend comparisons.
 - Armory: actual all-weapons hit-region counts. Weapon-specific metrics explicitly remain unavailable.
 - Refresh: persistent SQLite cache, ID deduplication, PUUID resolution cache, cross-process locking, provider retries and rate-limit handling.
-- Dark mode throughout the app, including charts, scoreboards, dialogs and native controls; friends-only production access, reduced-motion support, mobile layouts, data coverage details and JSON export.
+- Dark mode throughout the app, including charts, scoreboards, dialogs and native controls; direct access without sign-in, reduced-motion support, mobile layouts, data coverage details and JSON export.
 
 ## Live data
 
@@ -76,9 +76,9 @@ npm run test:e2e
 npm run build
 ```
 
-The Playwright suite starts an isolated fixture server and test database. Stop your regular dev server first, since Next.js allows one dev server per checkout. It runs desktop and mobile flows, checks connection setup and explicit demo selection, navigation, filters, comparisons, scoreboard expansion, award evidence, agent switches, Armory availability, persistent refresh results, hash links, reduced motion and cross-origin rejection. Screenshots are saved in `artifacts/`. The fixture test server has its own test password and never reads or overwrites the live cache.
+The Playwright suite starts an isolated fixture server and test database. Stop your regular dev server first, since Next.js allows one dev server per checkout. It runs desktop and mobile flows without credentials, checks connection setup and explicit demo selection, navigation, filters, comparisons, scoreboard expansion, award evidence, agent switches, Armory availability, persistent refresh results, hash links, reduced motion and cross-origin rejection. Screenshots are saved in `artifacts/`. The fixture server never reads or overwrites the live cache.
 
-The unit suite tests weighted math, all award types, ties, single-friend lobbies, shared/duplicate matches, incomplete lobbies, act boundaries, missing statistics, draws, provider normalization and privacy, bounded rate-limit behavior, SQLite deduplication, provider/act isolation, locks, identity resolution and password comparison.
+The unit suite tests weighted math, all award types, ties, single-friend lobbies, shared/duplicate matches, incomplete lobbies, act boundaries, missing statistics, draws, provider normalization and privacy, bounded rate-limit behavior, SQLite deduplication, provider/act isolation, locks and identity resolution.
 
 The completed validation results and remaining external limitations are recorded in [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
 
@@ -86,8 +86,8 @@ The completed validation results and remaining external limitations are recorded
 
 Use a **single Node server or Docker container with a persistent disk**. The current local SQLite architecture needs a writable, durable filesystem. A stateless or static-only host cannot preserve its cache without adapting storage.
 
-1. Set a long random `COURT_PASSWORD` in the host's environment. Production refuses access without it.
-2. Set `DATA_PROVIDER` and live credentials only on the server. Keep the password/key out of Git and client environment variables.
+1. Configure the host's environment for the live data provider. There is no visitor authentication to set up.
+2. Set `DATA_PROVIDER` and live credentials only on the server. Keep the API key out of Git and client environment variables.
 3. Mount persistent storage at `/app/data` (Docker) or set `DATABASE_PATH` to a durable path.
 4. Build and run:
 
@@ -97,7 +97,7 @@ npm run build
 npm start
 ```
 
-The browser's HTTP Basic prompt accepts any username and your shared court password. Use **HTTPS**, ideally with additional host access controls. Share the URL and password privately. There are no user accounts or Riot login implemented; the shared-password gate does not replace provider-required player opt-in.
+Visitors can open the URL directly without a password or sign-in. Use HTTPS on your host. Provider-required player opt-in and server API authorization remain separate from visitor access.
 
 Docker alternative:
 
@@ -105,7 +105,7 @@ Docker alternative:
 docker compose up --build -d
 ```
 
-Set `COURT_PASSWORD` and provider values in `.env.local` first. Place the container behind an HTTPS reverse proxy. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for persistence, backups, proxy configuration and scale limits.
+Set the provider values in `.env.local` first. Place the container behind an HTTPS reverse proxy. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for persistence, backups, proxy configuration and scale limits.
 
 ## Architecture & design
 

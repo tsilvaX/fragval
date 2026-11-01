@@ -1,4 +1,4 @@
-# Private deployment
+# Deployment
 
 Use a single Node 24 LTS service or Docker container with a persistent volume. This is a stateful SQLite app; the default cache is not appropriate for a static export or an ephemeral serverless filesystem.
 
@@ -7,16 +7,16 @@ Regular `npm run build` output runs with `npm start`. The Docker build sets `BUI
 ## Node server
 
 1. Clone the repository on the host and run `npm ci`.
-2. Set server-only environment variables, especially a long random `COURT_PASSWORD` and a durable `DATABASE_PATH`.
+2. Set server-only provider environment variables and a durable `DATABASE_PATH`.
 3. Run `npm run build`, then `npm start` under your process manager.
 4. Put port 3000 behind an HTTPS reverse proxy. Set `APP_ORIGIN=https://your-court.example` if the proxy changes the request's effective internal origin.
-5. Share the URL and password privately. The browser's Basic Authentication prompt accepts any username.
+5. Open or share the URL. No username, password or sign-in is required.
 
-You can validate the deployed protection with an unauthenticated request: expect 401 when a password is configured, or 503 when production is missing it. Authenticated requests should return the page and `/api/dashboard`. Never expose Basic Authentication over plain HTTP outside loopback or a trusted TLS-terminating proxy.
+Validate the deployment with ordinary requests without Authorization headers: the page, `/api/setup`, `/api/dashboard` and same-origin `/api/refresh` should work directly when provider configuration is ready. Old `COURT_PASSWORD` environment settings are no longer used.
 
 ## Docker
 
-Run `npm run setup:live` to validate your permitted provider key and prepare the ignored `.env.local` file, including a private court password if one is missing. Alternatively copy `.env.example` and configure those values manually. Then:
+Run `npm run setup:live` to validate your permitted provider key and prepare the ignored `.env.local` file. Alternatively copy `.env.example` and configure those values manually. No visitor credentials are generated. Then:
 
 ```sh
 docker compose up --build -d
@@ -36,4 +36,4 @@ Users trigger synchronization with REFRESH STATS. There is no hidden scheduled t
 
 ## Live activation checklist
 
-The four Riot IDs and the operator's confirmation of their owners' consent are already configured. A real key was validated locally, but no secret or match cache is in Git: configure your deployment's key, access acknowledgement, region (`auto` by default), platform and court password before starting it. Confirm the LIVE PROVIDER indicator and inspect coverage details. Fixture and live caches are separate; `?demo=1` explicitly opens the fictional exhibition. The official Riot adapter remains disabled pending production approval and RSO implementation.
+The four Riot IDs and the operator's confirmation of their owners' consent are already configured. A real key was validated locally, but no secret or match cache is in Git: configure your deployment's key, access acknowledgement, region (`auto` by default) and platform before starting it. Confirm the LIVE PROVIDER indicator and inspect coverage details. Fixture and live caches are separate; `?demo=1` explicitly opens the fictional exhibition. The official Riot adapter remains disabled pending production approval and RSO implementation.
