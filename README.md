@@ -35,7 +35,7 @@ If you do not have a key yet, run `npm run dev` and use the connection screen. T
 - Agents: weighted per-agent aggregates, sample indicators and cross-friend comparisons.
 - Armory: actual all-weapons hit-region counts. Weapon-specific metrics explicitly remain unavailable.
 - Refresh: persistent SQLite cache, ID deduplication, PUUID resolution cache, cross-process locking, provider retries and rate-limit handling.
-- Friends-only production access, reduced-motion support, mobile layouts, data coverage details and JSON export.
+- Dark mode throughout the app, including charts, scoreboards, dialogs and native controls; friends-only production access, reduced-motion support, mobile layouts, data coverage details and JSON export.
 
 ## Live data
 

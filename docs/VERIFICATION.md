@@ -19,6 +19,7 @@ Validated locally on Windows with Node 26.13.0 and Next.js 16.4.3. CI targets No
 | Real current-act history | Passed | 61 unique supported Competitive matches ingested into the local cache |
 | Live UI | Passed | All six views checked at desktop and mobile widths, including full scoreboards and each friend's agents; no browser errors |
 | Secret isolation | Passed | No API key in client build assets, standalone environment files or staged source; `.env.local` is ignored |
+| Dark mode | Passed | All six live views, scoreboards and dialogs checked at desktop/mobile sizes under light and dark system preferences; principal text/control pairs exceed 4.5:1 contrast |
 
 The browser story is: navigate from Overview to comparisons, choose a metric, inspect The Court's evidence and rules, filter match history, expand and collapse a full ten-player scoreboard, switch an agent's player filter, inspect explicit Armory availability, refresh through the API into SQLite, and see the updated result. URL hashes restore the selected view. Reduced motion is honored. Unrelated request origins are rejected.
 

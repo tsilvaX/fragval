@@ -52,7 +52,7 @@ Each category exposes its exact eligible-match denominator and each recipient's 
 
 ## Design choices
 
-Horizontal top navigation, square cards, condensed sports typography, fine rules, locally hosted agent portraits and understated court humor. Chart bars begin at zero; negative deltas extend left of zero. The ACS trend uses a labeled zero-based scale and explicitly aligns by each player's match index, not calendar date. Motion is confined to state changes, hover, refresh and scoreboard entry; `prefers-reduced-motion` disables it.
+Dark charcoal surfaces, warm off-white text, orange and lime accents, horizontal top navigation, square cards, condensed sports typography, fine rules, locally hosted agent portraits and understated court humor. Dark mode is applied from the initial HTML/CSS paint regardless of system preference; native controls and browser theme metadata use the same dark scheme. Chart bars begin at zero; negative deltas extend left of zero. The ACS trend uses a labeled zero-based scale and explicitly aligns by each player's match index, not calendar date. Motion is confined to state changes, hover, refresh and scoreboard entry; `prefers-reduced-motion` disables it.
 
 ## Scope limits
 
