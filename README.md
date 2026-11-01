@@ -6,7 +6,7 @@
 
 ## Run locally
 
-Requires **Node.js 22.13+** (Node 24 LTS recommended).
+Requires **Node.js 24 LTS** (also pinned for the Vercel runtime).
 
 ```sh
 npm ci
