@@ -66,7 +66,8 @@ export type Aggregate = {
   hs: number | null;
   delta: number | null;
 };
-export type AwardKey = "bottom" | "mvp" | "fragger" | "carry" | "liability";
+export type AwardKey =
+  "bottom" | "mvp" | "fragger" | "carry" | "liability" | "best-kd" | "worst-kd";
 export type Award = {
   key: AwardKey;
   title: string;

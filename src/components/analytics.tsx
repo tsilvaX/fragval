@@ -26,13 +26,17 @@ import {
 } from "./primitives";
 import { CourtTeaser } from "./court-awards";
 import { MatchHistory } from "./match-history";
+import { squadInsights } from "@/lib/squad";
+import { SquadSpotlight } from "./squad-spotlight";
 
 export function PlayerCards({
   data,
   onPlayer,
+  insights,
 }: {
   data: DashboardData;
   onPlayer: () => void;
+  insights: ReturnType<typeof squadInsights>;
 }) {
   const [sort, setSort] = useState<MetricKey>("acs");
   const stats = data.friends
@@ -89,6 +93,23 @@ export function PlayerCards({
                 <PlayerDot friend={f} />
                 <h3>{f.name}</h3>
                 <span>#{f.tag}</span>
+              </div>
+              <div className="player-titles" aria-label={`${f.name} titles`}>
+                {insights.titles[f.id]?.length ? (
+                  insights.titles[f.id].map((tag) => (
+                    <details
+                      className={`player-title title-${tag.tone}`}
+                      key={tag.key}
+                    >
+                      <summary>{tag.label}</summary>
+                      <p>{tag.detail}</p>
+                    </details>
+                  ))
+                ) : (
+                  <span className="title-unclaimed">
+                    Reputation loading. More games, more receipts.
+                  </span>
+                )}
               </div>
               <div className="player-featured">
                 <div>
@@ -155,6 +176,7 @@ export function Overview({
   navigate: (tab: string) => void;
 }) {
   const [metric, setMetric] = useState<MetricKey>("acs");
+  const insights = squadInsights(data.matches, data.friends, data.act);
   const stats = data.friends.map((f) => aggregate(data.matches, f.id));
   const totalKills = stats.reduce((n, s) => n + s.kills, 0);
   const shared = data.matches.filter(
@@ -215,7 +237,12 @@ export function Overview({
         </span>
         <span className="strip-right">ALL NUMBERS. ZERO ALIBIS.</span>
       </div>
-      <PlayerCards data={data} onPlayer={() => navigate("compare")} />
+      <PlayerCards
+        data={data}
+        insights={insights}
+        onPlayer={() => navigate("compare")}
+      />
+      <SquadSpotlight data={data} insights={insights} />
       <div className="overview-two-up">
         <section className="comparison-panel">
           <div className="panel-top">

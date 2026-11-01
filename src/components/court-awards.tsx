@@ -9,6 +9,8 @@ import {
   ArrowUpRight,
   Gavel,
   Info,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import type { Award, DashboardData } from "@/lib/model";
 import { calculateAwards } from "@/lib/stats";
@@ -26,6 +28,8 @@ const awardIcons = {
   fragger: Crosshair,
   carry: Handshake,
   liability: Anchor,
+  "best-kd": TrendingUp,
+  "worst-kd": TrendingDown,
 };
 export function CourtTeaser({
   data,
@@ -90,6 +94,12 @@ export function CourtAwards({ data }: { data: DashboardData }) {
     data.friends.map((f) => f.id),
     data.act,
   );
+  const [category, setCategory] = useState<"awards" | "kd">("awards");
+  const visibleAwards = awards.filter((award) =>
+    category === "kd"
+      ? award.key === "best-kd" || award.key === "worst-kd"
+      : award.key !== "best-kd" && award.key !== "worst-kd",
+  );
   const [selected, setSelected] = useState<Award | null>(null),
     [player, setPlayer] = useState<string | null>(null),
     [rules, setRules] = useState(false);
@@ -114,8 +124,47 @@ export function CourtAwards({ data }: { data: DashboardData }) {
           setPlayer(awards[0].entries[0]?.playerId ?? null);
         }}
       />
-      <div className="award-grid">
-        {awards.map((award) => {
+      <div className="metric-tabs" role="tablist" aria-label="Court categories">
+        {(["awards", "kd"] as const).map((id) => (
+          <button
+            key={id}
+            id={`court-tab-${id}`}
+            role="tab"
+            aria-selected={category === id}
+            aria-controls="court-awards-panel"
+            tabIndex={category === id ? 0 : -1}
+            className={category === id ? "active" : ""}
+            onClick={() => setCategory(id)}
+            onKeyDown={(event) => {
+              if (
+                !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
+              )
+                return;
+              event.preventDefault();
+              const next =
+                event.key === "Home"
+                  ? "awards"
+                  : event.key === "End"
+                    ? "kd"
+                    : category === "awards"
+                      ? "kd"
+                      : "awards";
+              setCategory(next);
+              document.getElementById(`court-tab-${next}`)?.focus();
+            }}
+          >
+            {id === "awards" ? "Court awards" : "K/D"}
+          </button>
+        ))}
+      </div>
+      <div
+        id="court-awards-panel"
+        className={`award-grid${category === "kd" ? " award-grid-kd" : ""}`}
+        role="tabpanel"
+        aria-labelledby={`court-tab-${category}`}
+        tabIndex={0}
+      >
+        {visibleAwards.map((award) => {
           const Icon = awardIcons[award.key],
             top = award.entries[0]?.matchIds.length ?? 0;
           return (
@@ -128,7 +177,9 @@ export function CourtAwards({ data }: { data: DashboardData }) {
                   <Icon size={23} strokeWidth={1.5} />
                 </span>
                 <span className="eyebrow">
-                  {award.key === "bottom" || award.key === "liability"
+                  {award.key === "bottom" ||
+                  award.key === "liability" ||
+                  award.key === "worst-kd"
                     ? "HALL OF SHAME"
                     : "HALL OF FAME"}
                 </span>
@@ -214,6 +265,12 @@ export function CourtAwards({ data }: { data: DashboardData }) {
               Match MVP, kill leader and friend-group awards credit all tied
               leaders. Bottom Frag King requires sole 10th place: a tie for last
               has rank 9 or better and receives no credit.
+            </p>
+            <p>
+              Best K/D and Worst K/D compare kills divided by deaths across the
+              entire lobby for each match, ignoring assists and combat score.
+              Ties share credit. Kills with zero deaths rank above every finite
+              ratio; zero kills and zero deaths are excluded from K/D awards.
             </p>
             <p>
               Friend Carry and Liability require at least two tracked

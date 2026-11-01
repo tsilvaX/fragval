@@ -126,6 +126,18 @@ export const awardDefinitions: {
     description:
       "Lowest combat score among at least two tracked friends. Moral support counts, right?",
   },
+  {
+    key: "best-kd",
+    title: "Best K/D",
+    description:
+      "Highest kills-to-deaths ratio among all ten players per match. Assists do not count. Tied leaders share the award.",
+  },
+  {
+    key: "worst-kd",
+    title: "Worst K/D",
+    description:
+      "Lowest kills-to-deaths ratio among all ten players per match. Assists do not count. Tied players share the award.",
+  },
 ];
 export function calculateAwards(
   matches: Match[],
@@ -136,26 +148,39 @@ export function calculateAwards(
     eligibleMatch(m, act),
   );
   return awardDefinitions.map((def) => {
+    const kd = def.key === "best-kd" || def.key === "worst-kd";
+    const valueOf = (p: Participant): number | null => {
+      if (def.key === "fragger") return p.kills;
+      if (kd)
+        return p.deaths > 0
+          ? p.kills / p.deaths
+          : p.kills > 0
+            ? Infinity
+            : null;
+      return p.score / p.rounds;
+    };
     const entries = friendIds.map((playerId) => ({
       playerId,
       matchIds: [] as string[],
     }));
     let eligible = 0;
     for (const m of qualifying) {
-      const friends = m.players.filter((p) => friendIds.includes(p.id));
+      const friends = m.players.filter(
+        (p) => friendIds.includes(p.id) && valueOf(p) !== null,
+      );
       const group = def.key === "carry" || def.key === "liability";
       if (group ? friends.length < 2 : friends.length < 1) continue;
       eligible++;
       const pool = group ? friends : m.players;
-      const values = pool.map((p) =>
-        def.key === "fragger" ? p.kills : p.score / p.rounds,
-      );
+      const values = pool.map(valueOf).filter((v) => v !== null);
       const target =
-        def.key === "bottom" || def.key === "liability"
+        def.key === "bottom" ||
+        def.key === "liability" ||
+        def.key === "worst-kd"
           ? Math.min(...values)
           : Math.max(...values);
       for (const p of friends) {
-        const value = def.key === "fragger" ? p.kills : p.score / p.rounds;
+        const value = valueOf(p);
         if (
           value === target &&
           (def.key !== "bottom" || placement(p, m) === 10)

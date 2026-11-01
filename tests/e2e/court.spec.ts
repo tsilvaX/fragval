@@ -46,7 +46,7 @@ test("the complete court: navigation, comparisons, evidence, scoreboards, agents
 }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  const response = await page.goto("/");
+  const response = await page.goto("/?demo=1");
   expect(response?.status()).toBe(200);
   expect(response?.headers()["www-authenticate"]).toBeUndefined();
   await expect(page.getByRole("heading", { name: /BIG TALK/ })).toBeVisible();
@@ -140,7 +140,7 @@ test("the complete court: navigation, comparisons, evidence, scoreboards, agents
   await expect(page.getByRole("status")).toContainText(
     "Exhibition fixtures synchronized",
   );
-  const r = await page.request.get("/api/dashboard");
+  const r = await page.request.get("/api/dashboard?demo=1");
   expect(r.ok()).toBeTruthy();
   const data = await r.json();
   expect(data.matches).toHaveLength(36);
@@ -160,6 +160,48 @@ test("the complete court: navigation, comparisons, evidence, scoreboards, agents
   ).toBeTruthy();
   expect(errors).toEqual([]);
 });
+test("court K/D tab shows both awards, evidence and keyboard navigation", async ({
+  page,
+}) => {
+  await page.goto("/?demo=1#court");
+  await expect(page.locator(".award-card")).toHaveCount(5);
+  const kdTab = page.getByRole("tab", { name: "K/D", exact: true });
+  const awardsTab = page.getByRole("tab", {
+    name: "Court awards",
+    exact: true,
+  });
+  await kdTab.click();
+  await expect(kdTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tabpanel").locator(".award-card")).toHaveCount(
+    2,
+  );
+  for (const title of ["Best K/D", "Worst K/D"]) {
+    const card = page
+      .locator(".award-card")
+      .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+    await expect(card).toContainText("Assists do not count");
+    await card.getByRole("button", { name: "Evidence" }).click();
+    await expect(page.getByRole("dialog")).toContainText(`${title} · Evidence`);
+    await expect(
+      page.getByRole("dialog").locator(".match-item").first(),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Close dialog" }).click();
+  }
+  await kdTab.focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(awardsTab).toBeFocused();
+  await expect(awardsTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".award-card")).toHaveCount(5);
+  await page.keyboard.press("End");
+  await expect(kdTab).toBeFocused();
+  await expect(page.locator(".award-card")).toHaveCount(2);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
+});
+
 test("hash links restore the view and reduced-motion renders without overflow", async ({
   page,
 }) => {

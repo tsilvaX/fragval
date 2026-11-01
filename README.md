@@ -29,8 +29,10 @@ If you do not have a key yet, run `npm run dev` and use the connection screen. T
 ## What works
 
 - Overview: sortable player cards; weighted ACS, K/D, ADR, win rate, hit-based HS%, damage delta, W/L and K/D/A totals.
+- Home reputations: Trade Surplus (best total K/D), Exit Interview (worst total K/D), Main Character Clause (most lobby MVPs), Basement Residency (most sole bottom finishes), and Metronome (lowest relative ACS variation, minimum three matches). Tap a title for its evidence and calculation. Ties share titles; empty samples earn none.
+- Partners in Crime: two disjoint duo pairings chosen from same-team results, with a three-game minimum and sample-adjusted win rates. The illustrated squad cart assigns its puller from combat-score advantage over tracked teammates in the latest ten shared games. Faces follow player names; titles, pairings and the driver recalculate when refreshed data arrives. Motion can be paused and respects reduced-motion preferences.
 - Head to head: zero-based comparative bars, signed damage deltas, a side-by-side table, ACS trends, and agent leaders with a five-match threshold.
-- The Court: full-lobby Bottom Frag King, Match MVP, kill leader, friend-group carry and liability. Inspect each player's contributing matches.
+- The Court: full-lobby Bottom Frag King, Match MVP, kill leader, friend-group carry and liability, plus a K/D tab for best and worst kills-to-deaths ratio per match, excluding assists. Inspect each player's contributing matches.
 - History: unique shared matches, player/map/result filters, pagination, and ten-player scoreboards with tracked-friend highlights.
 - Agents: weighted per-agent aggregates, sample indicators and cross-friend comparisons.
 - Armory: actual all-weapons hit-region counts. Weapon-specific metrics explicitly remain unavailable.

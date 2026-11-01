@@ -35,6 +35,71 @@ test("match MVP and top kills are distinct awards", () => {
   assert.equal(award([m], "mvp").entries[0].playerId, "p0");
   assert.equal(award([m], "fragger").entries[0].playerId, "p5");
 });
+
+test("K/D awards use ratios across the full lobby and ignore assists and combat score", () => {
+  const m = match();
+  m.players.forEach((p) => {
+    p.kills = 20;
+    p.deaths = 20;
+  });
+  m.players[5].kills = 12;
+  m.players[5].deaths = 4;
+  m.players[9].kills = 2;
+  m.players[9].assists = 100;
+  assert.equal(award([m], "best-kd").entries[0].playerId, "p5");
+  assert.equal(award([m], "worst-kd").entries[0].playerId, "p9");
+
+  // An untracked participant can beat the entire friend group.
+  m.players[1].deaths = 1;
+  assert.ok(award([m], "best-kd").entries.every((e) => !e.matchIds.length));
+  m.players[1].kills = 0;
+  assert.ok(award([m], "worst-kd").entries.every((e) => !e.matchIds.length));
+});
+
+test("K/D ties share credit and duplicate matches count once", () => {
+  const m = match();
+  m.players.forEach((p) => {
+    p.kills = 10;
+    p.deaths = 10;
+  });
+  m.players[0].kills = 20;
+  m.players[5].deaths = 5;
+  m.players[2].kills = 0;
+  m.players[9].kills = 0;
+  for (const [key, ids] of [
+    ["best-kd", ["p0", "p5"]],
+    ["worst-kd", ["p2", "p9"]],
+  ] as const) {
+    const a = award([m, structuredClone(m)], key, [...ids]);
+    assert.equal(a.eligible, 1);
+    assert.ok(a.entries.every((e) => e.matchIds.length === 1));
+  }
+});
+
+test("K/D awards handle deathless players and exclude undefined zero-over-zero ratios", () => {
+  const m = match();
+  m.players.forEach((p) => {
+    p.kills = 10;
+    p.deaths = 10;
+  });
+  m.players[0].deaths = 0;
+  m.players[5].deaths = 0;
+  m.players[9].kills = 0;
+  m.players[9].deaths = 0;
+  assert.equal(
+    award([m], "best-kd").entries.filter((e) => e.matchIds.length).length,
+    2,
+  );
+  assert.ok(award([m], "worst-kd").entries.every((e) => !e.matchIds.length));
+  for (const key of ["best-kd", "worst-kd"])
+    assert.equal(award([m], key, ["p9"]).eligible, 0);
+  m.players.forEach((p) => {
+    p.kills = 0;
+    p.deaths = 0;
+  });
+  for (const key of ["best-kd", "worst-kd"])
+    assert.equal(award([m], key).eligible, 0);
+});
 test("friend carry and liability compare friends even without the lobby winner", () => {
   const m = match();
   assert.equal(

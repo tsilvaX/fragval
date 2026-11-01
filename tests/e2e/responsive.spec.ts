@@ -7,7 +7,7 @@ test("every view fits narrow phones, tablets and desktop", async ({
     "The width matrix uses a desktop context with explicit viewports.",
   );
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/?demo=1");
   await expect(page.locator(".player-card")).toHaveCount(4);
   for (const width of [320, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
