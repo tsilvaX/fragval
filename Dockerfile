@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN BUILD_STANDALONE=true npm run build
 
 FROM node:24-bookworm-slim AS runtime
 WORKDIR /app

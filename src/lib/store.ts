@@ -8,7 +8,10 @@ let db: DatabaseSync | undefined;
 export function database() {
   if (db) return db;
   // This is runtime state, never a build input or a file to bundle.
-  const path = resolve(/* turbopackIgnore: true */ process.env.DATABASE_PATH ?? "data/frag-court.sqlite");
+  const path = resolve(
+    /* turbopackIgnore: true */ process.env.DATABASE_PATH ??
+      "data/frag-court.sqlite",
+  );
   mkdirSync(dirname(path), { recursive: true });
   db = new DatabaseSync(path);
   db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { trackedAccounts } from "../../config/players";
+import { trackedAccounts, type TrackedAccount } from "../../config/players";
 import type { Act, Friend, Match } from "../model";
 import type { MatchProvider } from "./contract";
 import { requestJson, ProviderError } from "./http";
@@ -83,6 +83,7 @@ export class HenrikProvider implements MatchProvider {
       tag: string,
       fetcher: () => Promise<string>,
     ) => Promise<string>,
+    private accounts: readonly TrackedAccount[] = trackedAccounts,
   ) {}
   async sync(knownIds: Set<string>) {
     const key = process.env.HENRIK_API_KEY;
@@ -97,18 +98,20 @@ export class HenrikProvider implements MatchProvider {
         503,
       );
     if (
-      trackedAccounts.length < 3 ||
-      trackedAccounts.length > 4 ||
-      trackedAccounts.some((p) => !p.consent)
+      this.accounts.length < 3 ||
+      this.accounts.length > 4 ||
+      this.accounts.some((p) => !p.consent)
     )
       throw new ProviderError(
         "Configure 3–4 authorized, opted-in friends in src/config/players.ts.",
         503,
       );
-    const region = process.env.VALORANT_REGION ?? "na";
+    const configuredRegion = process.env.VALORANT_REGION || "auto";
     const platform = process.env.VALORANT_PLATFORM ?? "pc";
     if (
-      !["na", "eu", "ap", "kr", "br", "latam"].includes(region) ||
+      !["auto", "na", "eu", "ap", "kr", "br", "latam"].includes(
+        configuredRegion,
+      ) ||
       !["pc", "console"].includes(platform)
     )
       throw new ProviderError(
@@ -165,22 +168,42 @@ export class HenrikProvider implements MatchProvider {
         "VALORANT-API season dates and type; ID verified against Riot content via HenrikDev",
     };
     const friends: Friend[] = [];
+    const regions = new Map<string, string>();
     const warnings: string[] = [];
-    for (const account of trackedAccounts) {
+    for (const account of this.accounts) {
+      let detectedRegion: string | undefined;
+      const lookupAccount = async (path: string) => {
+        const resolved = z
+          .object({
+            data: z.object({
+              puuid: z.string(),
+              region: z.string().optional(),
+            }),
+          })
+          .parse(await get(path)).data;
+        detectedRegion = resolved.region?.toLowerCase();
+        return resolved.puuid;
+      };
       const id =
         account.puuid ??
-        (await this.resolve(
-          account.name,
-          account.tag,
-          async () =>
-            z
-              .object({ data: z.object({ puuid: z.string() }) })
-              .parse(
-                await get(
-                  `/valorant/v2/account/${encodeURIComponent(account.name)}/${encodeURIComponent(account.tag)}`,
-                ),
-              ).data.puuid,
+        (await this.resolve(account.name, account.tag, () =>
+          lookupAccount(
+            `/valorant/v2/account/${encodeURIComponent(account.name)}/${encodeURIComponent(account.tag)}`,
+          ),
         ));
+      if (configuredRegion === "auto" && !detectedRegion) {
+        await lookupAccount(
+          `/valorant/v2/by-puuid/account/${encodeURIComponent(id)}`,
+        );
+      }
+      const region =
+        configuredRegion === "auto" ? detectedRegion : configuredRegion;
+      if (!region || !["na", "eu", "ap", "kr", "br", "latam"].includes(region))
+        throw new ProviderError(
+          `Could not determine the region for ${account.name}#${account.tag}. Set VALORANT_REGION explicitly on the server.`,
+          503,
+        );
+      regions.set(id, region);
       let rank: string | null = null;
       try {
         rank = z
@@ -216,75 +239,88 @@ export class HenrikProvider implements MatchProvider {
     let skipped = 0;
     const deadline = Date.now() + 120000;
     let details = 0;
-    history: for (const f of friends) {
-      // Paginate the materialized history, then fetch only unseen full scoreboards.
-      for (let page = 1; page <= 20; page++) {
-        if (Date.now() >= deadline) {
-          warnings.push(
-            "Refresh reached its two-minute retrieval budget. Retrieved progress was saved; refresh again to continue.",
-          );
-          break history;
-        }
-        const stored = z
-          .object({
-            data: z.array(
-              z.object({
-                meta: z.object({
-                  id: z.string(),
-                  started_at: z.string(),
-                  season: z.object({ id: z.string() }),
-                }),
-              }),
-            ),
-            results: z.object({ after: count }),
-          })
-          .parse(
-            await get(
-              `/valorant/v1/by-puuid/stored-matches/${region}/${encodeURIComponent(f.id)}?mode=competitive&size=20&page=${page}`,
-            ),
-          );
-        let reachedBoundary = false;
-        for (const entry of stored.data) {
-          if (Date.parse(entry.meta.started_at) < Date.parse(act.startsAt)) {
-            reachedBoundary = true;
-            continue;
-          }
-          if (
-            entry.meta.season.id !== act.id ||
-            knownIds.has(entry.meta.id) ||
-            matches.has(entry.meta.id)
-          )
-            continue;
-          if (details >= 40 || Date.now() >= deadline) {
+    try {
+      history: for (const f of friends) {
+        const region = regions.get(f.id)!;
+        // Paginate the materialized history, then fetch only unseen full scoreboards.
+        for (let page = 1; page <= 20; page++) {
+          if (Date.now() >= deadline) {
             warnings.push(
-              "Refresh reached its 40-new-scoreboard or two-minute retrieval budget. Retrieved progress was saved; refresh again to continue.",
+              "Refresh reached its two-minute retrieval budget. Retrieved progress was saved; refresh again to continue.",
             );
             break history;
           }
-          details++;
-          const payload = z
-            .object({ data: z.unknown() })
+          const stored = z
+            .object({
+              data: z.array(
+                z.object({
+                  meta: z.object({
+                    id: z.string(),
+                    started_at: z.string(),
+                    season: z.object({ id: z.string() }),
+                  }),
+                }),
+              ),
+              results: z.object({ after: count }),
+            })
             .parse(
               await get(
-                `/valorant/v4/match/${region}/${encodeURIComponent(entry.meta.id)}`,
+                `/valorant/v1/by-puuid/stored-matches/${region}/${encodeURIComponent(f.id)}?mode=competitive&size=20&page=${page}`,
               ),
             );
-          try {
-            const m = normalizeHenrik(payload.data, friends);
-            if (m.id === entry.meta.id && eligibleMatch(m, act))
-              matches.set(m.id, m);
-            else skipped++;
-          } catch {
-            skipped++;
+          let reachedBoundary = false;
+          for (const entry of stored.data) {
+            if (Date.parse(entry.meta.started_at) < Date.parse(act.startsAt)) {
+              reachedBoundary = true;
+              continue;
+            }
+            if (
+              entry.meta.season.id !== act.id ||
+              knownIds.has(entry.meta.id) ||
+              matches.has(entry.meta.id)
+            )
+              continue;
+            if (details >= 40 || Date.now() >= deadline) {
+              warnings.push(
+                "Refresh reached its 40-new-scoreboard or two-minute retrieval budget. Retrieved progress was saved; refresh again to continue.",
+              );
+              break history;
+            }
+            details++;
+            const payload = z
+              .object({ data: z.unknown() })
+              .parse(
+                await get(
+                  `/valorant/v4/match/${region}/${encodeURIComponent(entry.meta.id)}`,
+                ),
+              );
+            try {
+              const m = normalizeHenrik(payload.data, friends);
+              if (m.id === entry.meta.id && eligibleMatch(m, act))
+                matches.set(m.id, m);
+              else skipped++;
+            } catch {
+              skipped++;
+            }
           }
+          if (!stored.results.after || !stored.data.length || reachedBoundary)
+            break;
+          if (page === 20)
+            warnings.push(
+              `${f.name}: stopped at the safety limit of 400 stored matches. Refresh coverage is partial.`,
+            );
         }
-        if (!stored.results.after || !stored.data.length || reachedBoundary)
-          break;
-        if (page === 20)
-          warnings.push(
-            `${f.name}: stopped at the safety limit of 400 stored matches. Refresh coverage is partial.`,
-          );
       }
+    } catch (error) {
+      if (
+        error instanceof ProviderError &&
+        error.status === 503 &&
+        matches.size > 0
+      )
+        warnings.push(
+          "The provider paused retrieval. New matches already retrieved were saved; refresh again after the provider's rate-limit window to continue.",
+        );
+      else throw error;
     }
     if (skipped)
       warnings.push(

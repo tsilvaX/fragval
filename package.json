@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
+    "setup:live": "node scripts/setup-live.mjs",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "typecheck": "next typegen && tsc --noEmit",

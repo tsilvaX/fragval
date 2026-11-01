@@ -1,4 +1,13 @@
 export type Mode = "fixture" | "henrik" | "riot";
+export type SetupStatus = {
+  provider: Mode | null;
+  accounts: { riotId: string; consent: boolean; color: string }[];
+  hasKey: boolean;
+  authorized: boolean;
+  rosterReady: boolean;
+  ready: boolean;
+  region: string;
+};
 export type Act = {
   id: string;
   name: string;

@@ -2,6 +2,8 @@
 
 Use a single Node 24 LTS service or Docker container with a persistent volume. This is a stateful SQLite app; the default cache is not appropriate for a static export or an ephemeral serverless filesystem.
 
+Regular `npm run build` output runs with `npm start`. The Docker build sets `BUILD_STANDALONE=true` and runs the generated standalone server instead, so local startup does not emit a mismatched-output warning.
+
 ## Node server
 
 1. Clone the repository on the host and run `npm ci`.
@@ -14,7 +16,7 @@ You can validate the deployed protection with an unauthenticated request: expect
 
 ## Docker
 
-Copy `.env.example` to `.env.local`; set `COURT_PASSWORD` and your provider settings. Then:
+Run `npm run setup:live` to validate your permitted provider key and prepare the ignored `.env.local` file, including a private court password if one is missing. Alternatively copy `.env.example` and configure those values manually. Then:
 
 ```sh
 docker compose up --build -d
@@ -34,4 +36,4 @@ Users trigger synchronization with REFRESH STATS. There is no hidden scheduled t
 
 ## Live activation checklist
 
-Obtain permitted provider access and the required player opt-in, configure 3–4 friends, set HenrikDev's server key and region/platform, then restart. Confirm the LIVE PROVIDER indicator and inspect coverage details. Fixture and live caches are separate. The official Riot adapter remains disabled pending production approval and RSO implementation.
+The four Riot IDs and the operator's confirmation of their owners' consent are already configured. A real key was validated locally, but no secret or match cache is in Git: configure your deployment's key, access acknowledgement, region (`auto` by default), platform and court password before starting it. Confirm the LIVE PROVIDER indicator and inspect coverage details. Fixture and live caches are separate; `?demo=1` explicitly opens the fictional exhibition. The official Riot adapter remains disabled pending production approval and RSO implementation.

@@ -1,7 +1,27 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { normalizeHenrik } from "../src/lib/providers/henrik";
-import { requestJson, ProviderError } from "../src/lib/providers/http";
+import {
+  requestJson,
+  ProviderError,
+  retryDelaySeconds,
+} from "../src/lib/providers/http";
+test("provider's reset header is a seconds duration when Retry-After is absent", () => {
+  assert.equal(
+    retryDelaySeconds(new Headers({ "x-ratelimit-reset": "60" })),
+    60,
+  );
+  assert.equal(
+    retryDelaySeconds(
+      new Headers({ "retry-after": "20", "x-ratelimit-reset": "60" }),
+    ),
+    20,
+  );
+  assert.equal(
+    retryDelaySeconds(new Headers({ "x-ratelimit-reset": "invalid" }), 4),
+    4,
+  );
+});
 function raw() {
   return {
     metadata: {
@@ -76,13 +96,13 @@ test("rate limits retry within a bound and preserve Retry-After", async () => {
   let calls = 0;
   globalThis.fetch = async () => {
     calls++;
-    return new Response("", { status: 429, headers: { "Retry-After": "12" } });
+    return new Response("", { status: 429, headers: { "Retry-After": "120" } });
   };
   try {
     await assert.rejects(
       requestJson("https://example.com"),
       (e: unknown) =>
-        e instanceof ProviderError && e.status === 503 && e.retryAfter === 12,
+        e instanceof ProviderError && e.status === 503 && e.retryAfter === 120,
     );
     assert.equal(calls, 1);
   } finally {

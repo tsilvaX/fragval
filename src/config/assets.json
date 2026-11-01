@@ -1,0 +1,152 @@
+{
+  "agents": {
+    "gekko": {
+      "icon": "/agents/gekko.png",
+      "portrait": "/agents/gekko-full.png"
+    },
+    "fade": {
+      "icon": "/agents/fade.png",
+      "portrait": "/agents/fade-full.png"
+    },
+    "breach": {
+      "icon": "/agents/breach.png",
+      "portrait": "/agents/breach-full.png"
+    },
+    "deadlock": {
+      "icon": "/agents/deadlock.png",
+      "portrait": "/agents/deadlock-full.png"
+    },
+    "tejo": {
+      "icon": "/agents/tejo.png",
+      "portrait": "/agents/tejo-full.png"
+    },
+    "raze": {
+      "icon": "/agents/raze.png",
+      "portrait": "/agents/raze-full.png"
+    },
+    "chamber": {
+      "icon": "/agents/chamber.png",
+      "portrait": "/agents/chamber-full.png"
+    },
+    "kay/o": {
+      "icon": "/agents/kay-o.png",
+      "portrait": "/agents/kay-o-full.png"
+    },
+    "skye": {
+      "icon": "/agents/skye.png",
+      "portrait": "/agents/skye-full.png"
+    },
+    "cypher": {
+      "icon": "/agents/cypher.png",
+      "portrait": "/agents/cypher-full.png"
+    },
+    "sova": {
+      "icon": "/agents/sova.png",
+      "portrait": "/agents/sova-full.png"
+    },
+    "miks": {
+      "icon": "/agents/miks.png",
+      "portrait": "/agents/miks-full.png"
+    },
+    "killjoy": {
+      "icon": "/agents/killjoy.png",
+      "portrait": "/agents/killjoy-full.png"
+    },
+    "harbor": {
+      "icon": "/agents/harbor.png",
+      "portrait": "/agents/harbor-full.png"
+    },
+    "vyse": {
+      "icon": "/agents/vyse.png",
+      "portrait": "/agents/vyse-full.png"
+    },
+    "viper": {
+      "icon": "/agents/viper.png",
+      "portrait": "/agents/viper-full.png"
+    },
+    "hush": {
+      "icon": "/agents/hush.png",
+      "portrait": "/agents/hush-full.png"
+    },
+    "phoenix": {
+      "icon": "/agents/phoenix.png",
+      "portrait": "/agents/phoenix-full.png"
+    },
+    "veto": {
+      "icon": "/agents/veto.png",
+      "portrait": "/agents/veto-full.png"
+    },
+    "astra": {
+      "icon": "/agents/astra.png",
+      "portrait": "/agents/astra-full.png"
+    },
+    "brimstone": {
+      "icon": "/agents/brimstone.png",
+      "portrait": "/agents/brimstone-full.png"
+    },
+    "iso": {
+      "icon": "/agents/iso.png",
+      "portrait": "/agents/iso-full.png"
+    },
+    "clove": {
+      "icon": "/agents/clove.png",
+      "portrait": "/agents/clove-full.png"
+    },
+    "neon": {
+      "icon": "/agents/neon.png",
+      "portrait": "/agents/neon-full.png"
+    },
+    "yoru": {
+      "icon": "/agents/yoru.png",
+      "portrait": "/agents/yoru-full.png"
+    },
+    "waylay": {
+      "icon": "/agents/waylay.png",
+      "portrait": "/agents/waylay-full.png"
+    },
+    "sage": {
+      "icon": "/agents/sage.png",
+      "portrait": "/agents/sage-full.png"
+    },
+    "reyna": {
+      "icon": "/agents/reyna.png",
+      "portrait": "/agents/reyna-full.png"
+    },
+    "omen": {
+      "icon": "/agents/omen.png",
+      "portrait": "/agents/omen-full.png"
+    },
+    "jett": {
+      "icon": "/agents/jett.png",
+      "portrait": "/agents/jett-full.png"
+    }
+  },
+  "maps": {
+    "gauntlet": "/maps/gauntlet.jpg",
+    "ascent": "/maps/ascent.jpg",
+    "split": "/maps/split.jpg",
+    "fracture": "/maps/fracture.jpg",
+    "bind": "/maps/bind.jpg",
+    "skirmish a": "/maps/skirmish-a.jpg",
+    "skirmish b": "/maps/skirmish-b.jpg",
+    "skirmish c": "/maps/skirmish-c.jpg",
+    "skirmish e": "/maps/skirmish-e.jpg",
+    "skirmish d": "/maps/skirmish-d.jpg",
+    "breeze": "/maps/breeze.jpg",
+    "district": "/maps/district.jpg",
+    "kasbah": "/maps/kasbah.jpg",
+    "drift": "/maps/drift.jpg",
+    "glitch": "/maps/glitch.jpg",
+    "piazza": "/maps/piazza.jpg",
+    "abyss": "/maps/abyss.jpg",
+    "lotus": "/maps/lotus.jpg",
+    "sunset": "/maps/sunset.jpg",
+    "basic training": "/maps/basic-training.jpg",
+    "pearl": "/maps/pearl.jpg",
+    "summit": "/maps/summit.jpg",
+    "icebox": "/maps/icebox.jpg",
+    "the range": "/maps/the-range.jpg",
+    "corrode": "/maps/corrode.jpg",
+    "haven": "/maps/haven.jpg"
+  }
+}

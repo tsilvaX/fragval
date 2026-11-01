@@ -2,7 +2,7 @@
 
 **Big talk. Hard numbers.** A private VALORANT statistics dashboard for a small friend group, with an editorial scoreboard design and a very opinionated court.
 
-![FRAG COURT desktop](artifacts/desktop-production.png)
+![FRAG COURT live dashboard](artifacts/live-desktop.png)
 
 ## Run locally
 
@@ -10,7 +10,7 @@ Requires **Node.js 22.13+** (Node 24 LTS recommended).
 
 ```sh
 npm ci
-cp .env.example .env.local
+npm run setup:live
 npm run dev
 ```
 
@@ -18,11 +18,13 @@ On Windows PowerShell:
 
 ```powershell
 npm.cmd ci
-Copy-Item .env.example .env.local
+npm.cmd run setup:live
 npm.cmd run dev
 ```
 
-Open **http://127.0.0.1:3000**. No account or API key is needed in fixture mode. The 36 fictional matches are deterministic; refreshing does not manufacture new results. SQLite is created automatically in `data/`.
+Open **http://127.0.0.1:3000**. The four real accounts below are already configured. The secure setup command validates your HenrikDev key, saves it only in ignored `.env.local`, enables live mode and automatic region detection, and generates a private court password if you have not set one. Any username works in the browser’s password prompt; your password is in `.env.local`.
+
+If you do not have a key yet, run `npm run dev` and use the connection screen. The complete offline exhibition remains available at **http://127.0.0.1:3000/?demo=1** without API credentials. Its 36 fictional matches are deterministic and are never assigned to your real accounts. SQLite is created automatically in `data/`.
 
 ## What works
 
@@ -37,19 +39,28 @@ Open **http://127.0.0.1:3000**. No account or API key is needed in fixture mode.
 
 ## Live data
 
-The live adapter uses documented **HenrikDev v4 match details**, v1 stored history, v2 account resolution and v3 MMR. Add **3–4 authorized, opted-in Riot accounts** in [`src/config/players.ts`](src/config/players.ts), then configure `.env.local`:
+The live adapter uses documented **HenrikDev v4 match details**, v1 stored history, v2 account resolution and v3 MMR. The roster in [`src/config/players.ts`](src/config/players.ts) is:
+
+- `Mini Wo0t#ESP1`
+- `HomelessSlayer94#142`
+- `kotoris kitten#6874`
+- `kotooriiii#4236`
+
+The operator confirmed the four owners' consent. Provider-required authorization is separate. Use `npm run setup:live` after obtaining permitted key access, or manually configure the ignored `.env.local`:
 
 ```dotenv
 DATA_PROVIDER=henrik
 HENRIK_API_KEY=your_server_only_key
 HENRIK_AUTHORIZED=true
-VALORANT_REGION=na
+VALORANT_REGION=auto
 VALORANT_PLATFORM=pc
 ```
 
-Restart the server, then click **REFRESH STATS**. PUUIDs are cached after initial resolution; you may also configure them directly. Current act IDs are never hardcoded. Act dates and type come from VALORANT-API and the ID is verified against provider content before ingestion. Unknown or expired acts fail closed.
+Restart the server, then click **REFRESH STATS**. PUUIDs are cached after initial resolution; you may also configure them directly. Auto region mode resolves each account's actual region, including cached identities. Main-agent artwork is derived from imported matches instead of guessing each friend's agent. Current act IDs are never hardcoded. Act dates and type come from VALORANT-API and the ID is verified against provider content before ingestion. Unknown or expired acts fail closed.
 
-**Authorization matters:** an unofficial API key alone does not establish permission. HenrikDev's dashboard terms and Riot's applicable requirements must permit the actual deployment and all tracked players must supply the required opt-in. `HENRIK_AUTHORIZED` records the operator's acknowledgement; it is not OAuth or proof of authorization. Live requests have not been tested with a real key. See [`docs/PROVIDERS.md`](docs/PROVIDERS.md).
+Live account resolution, ranks, current-act match ingestion and rendering have been verified with a real key. The key and SQLite cache are local only; a fresh checkout or deployment needs its own server environment configuration. Rate-limited refreshes wait for the provider's reset window and preserve partial imported progress. Retrieved coverage remains explicit.
+
+**Authorization matters:** an unofficial API key alone does not establish permission. HenrikDev's dashboard terms and Riot's applicable requirements must permit the actual deployment and all tracked players must supply the required opt-in. `HENRIK_AUTHORIZED` records the operator's acknowledgement; it is not OAuth or proof of authorization. See [`docs/PROVIDERS.md`](docs/PROVIDERS.md).
 
 Riot's official adapter is an explicit future boundary, not a working integration. Riot currently excludes private personal applications, and approved integrations require a production key and RSO. Selecting `riot` displays that limitation and never silently falls back to fictional data.
 
@@ -65,7 +76,7 @@ npm run test:e2e
 npm run build
 ```
 
-The Playwright suite starts the local development server automatically if port 3000 is unused. It runs desktop and mobile flows, checks navigation, filters, comparisons, scoreboard expansion, award evidence, agent switches, Armory availability, persistent refresh results, hash links, reduced motion and cross-origin rejection. Screenshots are saved in `artifacts/`.
+The Playwright suite starts an isolated fixture server and test database. Stop your regular dev server first, since Next.js allows one dev server per checkout. It runs desktop and mobile flows, checks connection setup and explicit demo selection, navigation, filters, comparisons, scoreboard expansion, award evidence, agent switches, Armory availability, persistent refresh results, hash links, reduced motion and cross-origin rejection. Screenshots are saved in `artifacts/`. The fixture test server has its own test password and never reads or overwrites the live cache.
 
 The unit suite tests weighted math, all award types, ties, single-friend lobbies, shared/duplicate matches, incomplete lobbies, act boundaries, missing statistics, draws, provider normalization and privacy, bounded rate-limit behavior, SQLite deduplication, provider/act isolation, locks, identity resolution and password comparison.
 

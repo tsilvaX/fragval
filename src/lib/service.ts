@@ -12,21 +12,33 @@ import {
 import { HenrikProvider } from "./providers/henrik";
 import { RiotProvider } from "./providers/riot";
 import { ProviderError } from "./providers/http";
-import { eligibleMatch } from "./stats";
-export function dataMode(): Mode {
-  const mode = process.env.DATA_PROVIDER ?? "fixture";
-  if (!["fixture", "henrik", "riot"].includes(mode))
+import { eligibleMatch, agentStats } from "./stats";
+import { configuredMode } from "./readiness";
+export function dataMode(demo = false): Mode {
+  try {
+    return configuredMode(demo);
+  } catch {
     throw new ProviderError(
       "DATA_PROVIDER must be fixture, henrik, or riot.",
       503,
     );
-  return mode as Mode;
+  }
 }
-export async function synchronize(): Promise<{
+function withObservedAgents(data: DashboardData): DashboardData {
+  if (data.mode === "fixture") return data;
+  return {
+    ...data,
+    friends: data.friends.map((friend) => ({
+      ...friend,
+      agent: agentStats(data.matches, friend.id)[0]?.agent ?? "Unknown",
+    })),
+  };
+}
+export async function synchronize(demo = false): Promise<{
   data: DashboardData;
   added: number;
 }> {
-  const mode = dataMode();
+  const mode = dataMode(demo);
   if (!acquireLock(mode))
     throw new ProviderError(
       "A refresh is already in progress. Please wait.",
@@ -39,7 +51,7 @@ export async function synchronize(): Promise<{
       (mode === "fixture" || Date.now() < Date.parse(previous.act.endsAt)) &&
       Date.now() - Date.parse(previous.lastSync) < 15000
     )
-      return { data: previous, added: 0 };
+      return { data: withObservedAgents(previous), added: 0 };
     const snapshot =
       mode === "fixture"
         ? {
@@ -59,18 +71,18 @@ export async function synchronize(): Promise<{
       eligibleMatch(m, snapshot.act),
     );
     const added = saveSnapshot(mode, snapshot);
-    return { data: readSnapshot(mode)!, added };
+    return { data: withObservedAgents(readSnapshot(mode)!), added };
   } finally {
     releaseLock(mode);
   }
 }
-export async function getDashboard() {
-  const mode = dataMode();
+export async function getDashboard(demo = false) {
+  const mode = dataMode(demo);
   const existing = readSnapshot(mode);
-  if (!existing) return (await synchronize()).data;
+  if (!existing) return (await synchronize(demo)).data;
   if (mode !== "fixture" && Date.now() >= Date.parse(existing.act.endsAt)) {
     // Never return last act's cached totals as the current act.
-    return (await synchronize()).data;
+    return (await synchronize(demo)).data;
   }
-  return existing;
+  return withObservedAgents(existing);
 }

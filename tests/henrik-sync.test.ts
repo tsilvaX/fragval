@@ -1,6 +1,5 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { trackedAccounts } from "../src/config/players";
 import { HenrikProvider } from "../src/lib/providers/henrik";
 import { fixtureMatches } from "../src/lib/fixtures";
 import { eligibleMatch } from "../src/lib/stats";
@@ -16,7 +15,7 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
   const saved = Object.fromEntries(envKeys.map((k) => [k, process.env[k]]));
   process.env.HENRIK_API_KEY = "test-key-never-a-real-credential";
   process.env.HENRIK_AUTHORIZED = "true";
-  process.env.VALORANT_REGION = "na";
+  process.env.VALORANT_REGION = "auto";
   process.env.VALORANT_PLATFORM = "pc";
   const start = new Date(Date.now() - 86400000).toISOString(),
     end = new Date(Date.now() + 86400000).toISOString(),
@@ -24,6 +23,8 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
   const source = fixtureMatches()[0];
   let detailCalls = 0,
     accountCalls = 0;
+  let pauseStored = false,
+    storedCalls = 0;
   const friends = [0, 1, 2].map((i) => ({
     name: `Friend${i}`,
     tag: "GG",
@@ -31,7 +32,6 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
     agent: "Jett",
     consent: true,
   }));
-  trackedAccounts.push(...friends);
   globalThis.fetch = async (input, options) => {
     const url = String(input);
     if (url.startsWith("https://api.henrikdev.xyz"))
@@ -59,13 +59,28 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
     if (url.includes("/v2/account/")) {
       accountCalls++;
       const i = url.match(/Friend(\d)/)?.[1];
-      return Response.json({ data: { puuid: `live-friend-${i}` } });
+      return Response.json({
+        data: { puuid: `live-friend-${i}`, region: "eu" },
+      });
     }
-    if (url.includes("/mmr/"))
+    if (url.includes("/v2/by-puuid/account/"))
+      return Response.json({
+        data: { puuid: url.split("/").at(-1), region: "eu" },
+      });
+    if (url.includes("/mmr/")) {
+      assert.ok(url.includes("/mmr/eu/pc/"));
       return Response.json({
         data: { current: { tier: { name: "Diamond 1" } } },
       });
-    if (url.includes("/stored-matches/"))
+    }
+    if (url.includes("/stored-matches/")) {
+      assert.ok(url.includes("/stored-matches/eu/"));
+      storedCalls++;
+      if (pauseStored && storedCalls > 1)
+        return new Response("", {
+          status: 429,
+          headers: { "Retry-After": "120" },
+        });
       return Response.json({
         data: [
           {
@@ -85,6 +100,7 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
         ],
         results: { after: 0 },
       });
+    }
     if (url.includes("/v4/match/")) {
       detailCalls++;
       return Response.json({
@@ -128,7 +144,7 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
     const provider = new HenrikProvider(async (name, _tag, fetcher) => {
       if (!identities.has(name)) identities.set(name, await fetcher());
       return identities.get(name)!;
-    });
+    }, friends);
     const first = await provider.sync(new Set());
     assert.equal(first.act.id, "live-act");
     assert.equal(first.matches.length, 1);
@@ -142,9 +158,15 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
     assert.equal(second.matches.length, 0);
     assert.equal(detailCalls, 1);
     assert.equal(accountCalls, 3);
+    pauseStored = true;
+    storedCalls = 0;
+    const partial = await provider.sync(new Set());
+    assert.equal(partial.matches.length, 1);
+    assert.ok(
+      partial.warnings.some((w) => w.includes("already retrieved were saved")),
+    );
   } finally {
     globalThis.fetch = originalFetch;
-    trackedAccounts.splice(0, trackedAccounts.length);
     for (const key of envKeys) {
       if (saved[key] === undefined) delete process.env[key];
       else process.env[key] = saved[key];

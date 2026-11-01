@@ -13,12 +13,13 @@ import {
   Settings2,
   WifiOff,
 } from "lucide-react";
-import type { DashboardData } from "@/lib/model";
+import type { DashboardData, SetupStatus } from "@/lib/model";
 import { eligibleMatch } from "@/lib/stats";
 import { Overview, Comparison, Agents, Armory } from "./analytics";
 import { CourtAwards } from "./court-awards";
 import { MatchHistory } from "./match-history";
 import { Modal } from "./primitives";
+import { SetupPanel } from "./setup-panel";
 const tabs = [
   { id: "overview", label: "Overview", num: "01" },
   { id: "compare", label: "Head to head", num: "02" },
@@ -36,18 +37,36 @@ export function CourtApp() {
     [notice, setNotice] = useState(""),
     [modal, setModal] = useState<"setup" | "about" | "coverage" | null>(null);
   const refreshingRef = useRef(false);
+  const demoRef = useRef(false);
+  const [setup, setSetup] = useState<SetupStatus | null>(null);
   useEffect(() => {
     const syncHash = () => {
       const id = window.location.hash.slice(1);
+      if (id === "main-content") return;
       setTab(tabs.some((t) => t.id === id) ? id : "overview");
     };
     syncHash();
     window.addEventListener("hashchange", syncHash);
     const controller = new AbortController();
-    fetch("/api/dashboard", { signal: controller.signal })
+    demoRef.current =
+      new URLSearchParams(window.location.search).get("demo") === "1";
+    fetch("/api/setup", { signal: controller.signal })
       .then(async (r) => {
-        const d = await r.json();
-        if (!r.ok) throw Error(d.error ?? "Could not load the court.");
+        if (!r.ok)
+          throw Error("Could not check the court's connection settings.");
+        const status: SetupStatus = await r.json();
+        setSetup(status);
+        if (!demoRef.current && status.provider === "henrik" && !status.ready)
+          return;
+        const response = await fetch(
+          `/api/dashboard${demoRef.current ? "?demo=1" : ""}`,
+          { signal: controller.signal },
+        );
+        const d = await response.json();
+        if (!response.ok) {
+          if (d.setup) setSetup(d.setup);
+          throw Error(d.error ?? "Could not load the court.");
+        }
         setData(d);
       })
       .catch((e) => {
@@ -83,9 +102,16 @@ export function CourtApp() {
     setError("");
     setNotice("");
     try {
-      const r = await fetch("/api/refresh", { method: "POST" });
+      const statusResponse = await fetch("/api/setup");
+      if (statusResponse.ok) setSetup(await statusResponse.json());
+      const r = await fetch(`/api/refresh${demoRef.current ? "?demo=1" : ""}`, {
+        method: "POST",
+      });
       const result = await r.json();
-      if (!r.ok) throw Error(result.error ?? "Refresh failed.");
+      if (!r.ok) {
+        if (result.setup) setSetup(result.setup);
+        throw Error(result.error ?? "Refresh failed.");
+      }
       setData(result.data);
       setNotice(
         result.data.mode === "fixture"
@@ -189,7 +215,7 @@ export function CourtApp() {
           </span>
         </nav>
       </div>
-      <main id="main-content" className="main-content">
+      <main id="main-content" className="main-content" tabIndex={-1}>
         <div className="context-bar">
           <div>
             <span className="status-square" />
@@ -217,6 +243,11 @@ export function CourtApp() {
             <button onClick={() => setModal("setup")}>
               Connect your squad <ArrowUpRight size={13} />
             </button>
+            {demoRef.current && (
+              <a href="/" className="demo-exit">
+                Back to live squad ↗
+              </a>
+            )}
           </div>
         )}
         {error && (
@@ -266,17 +297,7 @@ export function CourtApp() {
             )}
           </div>
         ) : (
-          <div className="empty-state setup-empty">
-            <Gavel size={42} />
-            <h1>Court is in recess.</h1>
-            <p>
-              Configure the selected provider, or set DATA_PROVIDER=fixture to
-              explore the complete exhibition.
-            </p>
-            <button className="button" onClick={refresh} disabled={refreshing}>
-              Retry connection
-            </button>
-          </div>
+          <SetupPanel setup={setup} refreshing={refreshing} onRetry={refresh} />
         )}
         {data && (
           <div className="coverage-foot">
@@ -322,6 +343,17 @@ export function CourtApp() {
               <span className="tag">
                 CURRENT PROVIDER: {data?.mode ?? "SERVER CONFIGURATION"}
               </span>
+              <h3>Your tracked accounts</h3>
+              <ul className="configured-roster">
+                {setup?.accounts.map((p) => (
+                  <li key={p.riotId}>
+                    {p.riotId}
+                    <span>
+                      {p.consent ? "Consent confirmed" : "Consent needed"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
               <h3>Start with the exhibition</h3>
               <p>
                 Fixture mode needs no credentials. Every match is deterministic
@@ -335,12 +367,13 @@ export function CourtApp() {
                   provider access plus each friend’s required opt-in.
                 </li>
                 <li>
-                  Add your 3–4 Riot IDs in <code>src/config/players.ts</code>.
+                  Your four Riot IDs are already configured in{" "}
+                  <code>src/config/players.ts</code>.
                 </li>
                 <li>
-                  Copy <code>.env.example</code> to <code>.env.local</code>. Set{" "}
-                  <code>DATA_PROVIDER=henrik</code>, your server-only key,
-                  region and authorization acknowledgement.
+                  Run <code>npm run setup:live</code> after obtaining permitted
+                  provider access. Paste the key into its hidden prompt. Region
+                  detection is automatic.
                 </li>
                 <li>
                   Restart the server and refresh. Real and fixture caches stay

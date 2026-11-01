@@ -1,4 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
+const port = process.env.PLAYWRIGHT_PORT || "3000";
+const baseURL = `http://127.0.0.1:${port}`;
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -6,7 +8,7 @@ export default defineConfig({
   timeout: 45000,
   reporter: "list",
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL,
     trace: "retain-on-failure",
     httpCredentials: { username: "friend", password: "court-e2e-password" },
   },
@@ -24,10 +26,15 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `${process.platform === "win32" ? "npm.cmd" : "npm"} run dev`,
-    url: "http://127.0.0.1:3000/api/dashboard",
+    cwd: process.env.PLAYWRIGHT_APP_DIR,
+    command: `${process.platform === "win32" ? "npm.cmd" : "npm"} run dev -- --port ${port}`,
+    url: `${baseURL}/api/dashboard`,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
-    env: { DATA_PROVIDER: "fixture", DATABASE_PATH: "data/e2e.sqlite" },
+    env: {
+      DATA_PROVIDER: "fixture",
+      DATABASE_PATH: "data/e2e.sqlite",
+      COURT_PASSWORD: "court-e2e-password",
+    },
   },
 });

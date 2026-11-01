@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
 import { getDashboard } from "@/lib/service";
 import { ProviderError } from "@/lib/providers/http";
+import { setupStatus } from "@/lib/readiness";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    return NextResponse.json(await getDashboard(), {
-      headers: { "Cache-Control": "no-store" },
-    });
+    return NextResponse.json(
+      await getDashboard(new URL(request.url).searchParams.get("demo") === "1"),
+      {
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
   } catch (error) {
     return NextResponse.json(
       {
+        setup: setupStatus(),
         error:
           error instanceof ProviderError
             ? error.message

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { Friend, Match } from "@/lib/model";
 import { aggregate, placement, scoreboard, won } from "@/lib/stats";
+import catalog from "@/config/assets.json";
 import {
   AgentImage,
   fmt,
@@ -132,15 +133,9 @@ export function MatchRow({
   const count = match.players.filter((p) =>
     friends.some((f) => f.id === p.id),
   ).length;
-  const supportedMap = [
-    "Ascent",
-    "Haven",
-    "Bind",
-    "Lotus",
-    "Sunset",
-    "Split",
-    "Pearl",
-  ].includes(match.map);
+  const mapAsset = (catalog.maps as Record<string, string>)[
+    match.map.toLowerCase()
+  ];
   return (
     <article className={`match-item ${expanded ? "is-expanded" : ""}`}>
       <button
@@ -158,9 +153,9 @@ export function MatchRow({
         <div
           className="match-map"
           style={
-            supportedMap
+            mapAsset
               ? {
-                  backgroundImage: `linear-gradient(90deg,rgba(24,28,26,.6),rgba(24,28,26,.05)),url(/maps/${match.map.toLowerCase()}.jpg)`,
+                  backgroundImage: `linear-gradient(90deg,rgba(24,28,26,.6),rgba(24,28,26,.05)),url(${mapAsset})`,
                 }
               : undefined
           }

@@ -1,4 +1,46 @@
 import { test, expect } from "@playwright/test";
+import { trackedAccounts } from "../../src/config/players";
+test("configured real accounts show an honest connection state and demo is an explicit choice", async ({
+  page,
+}) => {
+  let dashboardCalls = 0;
+  page.on("request", (request) => {
+    if (request.url().includes("/api/dashboard")) dashboardCalls++;
+  });
+  await page.route("**/api/setup", (route) =>
+    route.fulfill({
+      json: {
+        provider: "henrik",
+        accounts: trackedAccounts.map((p) => ({
+          riotId: `${p.name}#${p.tag}`,
+          consent: p.consent,
+          color: p.color,
+        })),
+        hasKey: false,
+        authorized: false,
+        rosterReady: true,
+        ready: false,
+        region: "auto",
+      },
+    }),
+  );
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Your squad is on the docket." }),
+  ).toBeVisible();
+  await expect(page.locator(".roster-preview article")).toHaveCount(4);
+  for (const p of trackedAccounts)
+    await expect(page.locator(".roster-preview")).toContainText(p.name);
+  expect(dashboardCalls).toBe(0);
+  await expect(page.locator(".player-card")).toHaveCount(0);
+  await page.getByRole("link", { name: "Explore labeled demo" }).click();
+  await expect(page.locator(".player-card")).toHaveCount(4);
+  await expect(page.locator(".demo-banner")).toContainText("Fictional friends");
+  await page.getByRole("link", { name: "Back to live squad" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Your squad is on the docket." }),
+  ).toBeVisible();
+});
 test("the complete court: navigation, comparisons, evidence, scoreboards, agents and refresh", async ({
   page,
 }, testInfo) => {

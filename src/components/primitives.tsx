@@ -3,6 +3,7 @@ import { useEffect, useRef, type ReactNode, type CSSProperties } from "react";
 import { X, ArrowUpRight, Crosshair } from "lucide-react";
 import type { Friend, Aggregate, Match } from "@/lib/model";
 import { aggregate } from "@/lib/stats";
+import catalog from "@/config/assets.json";
 
 export const metrics = {
   acs: {
@@ -75,21 +76,12 @@ export function AgentImage({
   className?: string;
 }) {
   const name = agent.toLowerCase();
-  const supported = [
-    "jett",
-    "omen",
-    "killjoy",
-    "sage",
-    "sova",
-    "raze",
-    "cypher",
-    "reyna",
-    "viper",
-    "breach",
-  ].includes(name);
-  return supported ? (
+  const asset = (
+    catalog.agents as Record<string, { icon: string; portrait: string }>
+  )[name];
+  return asset ? (
     <img
-      src={`/agents/${name}${full && ["jett", "omen", "killjoy", "sage"].includes(name) ? "-full" : ""}.png`}
+      src={full ? asset.portrait : asset.icon}
       alt={agent}
       className={className}
       loading="lazy"
