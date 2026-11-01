@@ -230,8 +230,9 @@ export function SquadSpotlight({
           Titles recalculate whenever match data updates. K/D uses total kills ÷
           total deaths, ignoring assists. MVPs and sole bottom finishes use the
           entire ten-player lobby. Equal totals share titles; zero awards do not
-          earn one. Metronome measures the lowest relative variation in match
-          ACS, with at least three games per player and two qualifying players.
+          earn one. Mr Consistent measures the lowest relative variation in
+          match ACS, with at least three games per player and two qualifying
+          players.
         </p>
         <p>
           The cart uses the latest ten unique act matches with at least two

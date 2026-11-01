@@ -57,11 +57,9 @@ test("home titles, photos, duo pairings and cart recalculate after refresh", asy
   const mini = page.locator(".player-card").filter({
     has: page.getByRole("heading", { name: "Mini Wo0t", exact: true }),
   });
-  await expect(mini.locator(".player-titles")).toContainText("Trade Surplus");
-  await expect(mini.locator(".player-titles")).toContainText(
-    "Main Character Clause",
-  );
-  await mini.locator("summary").filter({ hasText: "Trade Surplus" }).click();
+  await expect(mini.locator(".player-titles")).toContainText("Aimlabs");
+  await expect(mini.locator(".player-titles")).toContainText("Main Character");
+  await mini.locator("summary").filter({ hasText: "Aimlabs" }).click();
   await expect(mini.locator(".player-titles")).toContainText(
     "Assists excluded",
   );
@@ -95,15 +93,11 @@ test("home titles, photos, duo pairings and cart recalculate after refresh", asy
     "data-player",
     "friend-1",
   );
-  await expect(mini.locator(".player-titles")).not.toContainText(
-    "Trade Surplus",
-  );
+  await expect(mini.locator(".player-titles")).not.toContainText("Aimlabs");
   const homeless = page.locator(".player-card").filter({
     has: page.getByRole("heading", { name: "HomelessSlayer94", exact: true }),
   });
-  await expect(homeless.locator(".player-titles")).toContainText(
-    "Trade Surplus",
-  );
+  await expect(homeless.locator(".player-titles")).toContainText("Aimlabs");
   await expect(page.locator(".cart-puller img")).toHaveAttribute(
     "src",
     /homeless-slayer/,

@@ -66,7 +66,7 @@ export function squadInsights(matches: Match[], friends: Friend[], act: Act) {
         const s = totals.find((s) => s.playerId === entry.playerId)!;
         titles[entry.playerId].push({
           key: lowest ? "worst-kd" : "best-kd",
-          label: lowest ? "Exit Interview" : "Trade Surplus",
+          label: lowest ? "All Brain No Aim" : "Aimlabs",
           detail: `${lowest ? "Lowest" : "Highest"} squad K/D: ${entry.value === Infinity ? "deathless" : entry.value.toFixed(2)} · ${s.kills} kills / ${s.deaths} deaths across ${s.matches} matches. Assists excluded. Ties share the title.`,
           tone: lowest ? "shame" : "fame",
         });
@@ -75,8 +75,8 @@ export function squadInsights(matches: Match[], friends: Friend[], act: Act) {
   }
   const awards = calculateAwards(qualifying, ids, act);
   for (const [key, label, tone] of [
-    ["mvp", "Main Character Clause", "fame"],
-    ["bottom", "Basement Residency", "shame"],
+    ["mvp", "Main Character", "fame"],
+    ["bottom", "I can't hear you from down here!", "shame"],
   ] as const) {
     const values = awards
       .find((a) => a.key === key)!
@@ -114,7 +114,7 @@ export function squadInsights(matches: Match[], friends: Friend[], act: Act) {
       const sample = consistency.find((s) => s.playerId === entry.playerId)!;
       titles[entry.playerId].push({
         key: "consistent",
-        label: "Metronome",
+        label: "Mr Consistent",
         tone: "neutral",
         detail: `Most consistent combat score: ${(entry.value * 100).toFixed(1)}% relative variation across ${sample.matches} games. Lowest standard deviation divided by mean ACS; minimum three matches. Consistency measures steadiness, not skill.`,
       });
