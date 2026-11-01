@@ -36,7 +36,7 @@ If you do not have a key yet, run `npm run dev` and use the connection screen. T
 - History: unique shared matches, player/map/result filters, pagination, and ten-player scoreboards with tracked-friend highlights.
 - Agents: weighted per-agent aggregates, sample indicators and cross-friend comparisons.
 - Armory: actual all-weapons hit-region counts. Weapon-specific metrics explicitly remain unavailable.
-- Refresh: persistent SQLite cache, ID deduplication, PUUID resolution cache, cross-process locking, provider retries and rate-limit handling.
+- Refresh: persistent Neon Postgres on Vercel or SQLite locally, ID deduplication, PUUID resolution cache, refresh locking, provider retries and rate-limit handling.
 - Dark mode throughout the app, including charts, scoreboards, dialogs and native controls; direct access without sign-in, reduced-motion support, mobile layouts, data coverage details and JSON export.
 
 ## Live data
@@ -86,7 +86,9 @@ The completed validation results and remaining external limitations are recorded
 
 ## Share with friends
 
-Use a **single Node server or Docker container with a persistent disk**. The current local SQLite architecture needs a writable, durable filesystem. A stateless or static-only host cannot preserve its cache without adapting storage.
+On **Vercel**, connect a Neon database to the project (the integration supplies server-only `DATABASE_URL`), select Node 24, and configure the provider settings above. Production should keep a persistent database branch; automatic preview branches can isolate test deployments. Neon tables are initialized on first use. Snapshot writes are atomic, reads use one database snapshot, and refresh locks have an owner so an expired worker cannot release another instance’s lock. A Vercel deployment with no database fails explicitly instead of writing an ephemeral SQLite cache.
+
+You can also use a **single Node server or Docker container with a persistent disk**. Without `DATABASE_URL` (or `POSTGRES_URL`), the app uses SQLite:
 
 1. Configure the host's environment for the live data provider. There is no visitor authentication to set up.
 2. Set `DATA_PROVIDER` and live credentials only on the server. Keep the API key out of Git and client environment variables.

@@ -2,13 +2,7 @@ import "server-only";
 import { fixtureFriends } from "../config/players";
 import { fixtureAct, fixtureMatches } from "./fixtures";
 import type { DashboardData, Mode } from "./model";
-import {
-  acquireLock,
-  readSnapshot,
-  releaseLock,
-  resolveIdentity,
-  saveSnapshot,
-} from "./store";
+import { getStore } from "./persistence";
 import { HenrikProvider } from "./providers/henrik";
 import { RiotProvider } from "./providers/riot";
 import { ProviderError } from "./providers/http";
@@ -39,13 +33,14 @@ export async function synchronize(demo = false): Promise<{
   added: number;
 }> {
   const mode = dataMode(demo);
-  if (!acquireLock(mode))
+  const store = getStore();
+  if (!(await store.acquireLock(mode)))
     throw new ProviderError(
       "A refresh is already in progress. Please wait.",
       409,
     );
   try {
-    const previous = readSnapshot(mode);
+    const previous = await store.readSnapshot(mode);
     if (
       previous?.lastSync &&
       (mode === "fixture" || Date.now() < Date.parse(previous.act.endsAt)) &&
@@ -64,21 +59,24 @@ export async function synchronize(demo = false): Promise<{
           }
         : await (
             mode === "henrik"
-              ? new HenrikProvider(resolveIdentity)
+              ? new HenrikProvider(store.resolveIdentity)
               : new RiotProvider()
           ).sync(new Set(previous?.matches.map((m) => m.id)));
     snapshot.matches = snapshot.matches.filter((m) =>
       eligibleMatch(m, snapshot.act),
     );
-    const added = saveSnapshot(mode, snapshot);
-    return { data: withObservedAgents(readSnapshot(mode)!), added };
+    const added = await store.saveSnapshot(mode, snapshot);
+    return {
+      data: withObservedAgents((await store.readSnapshot(mode))!),
+      added,
+    };
   } finally {
-    releaseLock(mode);
+    await store.releaseLock(mode);
   }
 }
 export async function getDashboard(demo = false) {
   const mode = dataMode(demo);
-  const existing = readSnapshot(mode);
+  const existing = await getStore().readSnapshot(mode);
   if (!existing) return (await synchronize(demo)).data;
   if (mode !== "fixture" && Date.now() >= Date.parse(existing.act.endsAt)) {
     // Never return last act's cached totals as the current act.

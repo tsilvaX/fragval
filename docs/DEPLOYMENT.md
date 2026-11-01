@@ -1,6 +1,16 @@
 # Deployment
 
-Use a single Node 24 LTS service or Docker container with a persistent volume. This is a stateful SQLite app; the default cache is not appropriate for a static export or an ephemeral serverless filesystem.
+Use Vercel with Neon Postgres, or a single Node 24 LTS service / Docker container with a persistent SQLite volume. The app is not a static export.
+
+## Vercel and Neon
+
+1. Connect the GitHub repository to a Next.js Vercel project and select Node 24.
+2. Add a free Neon database through Vercel Storage. Use the integration’s default environment-variable prefix so `DATABASE_URL` is supplied. The store also accepts `POSTGRES_URL`.
+3. Keep automatic database branching off for Production and on for Preview. Real-time subscriptions are not required.
+4. Configure server-only `DATA_PROVIDER=henrik`, `HENRIK_API_KEY`, `HENRIK_AUTHORIZED=true`, `VALORANT_REGION=auto`, and `VALORANT_PLATFORM=pc`. Keep secrets in Vercel, outside Git.
+5. Deploy the intended commit to Production. Open `/api/setup`, then `/api/dashboard` and the home tab. The first live sync can take several minutes while retrieving scoreboards; subsequent loads use the shared cache. Dashboard and refresh handlers allow up to 300 seconds.
+
+Neon schema creation is lazy and build-safe. Snapshots and unique match inserts commit together. Reads use one SQL statement for a consistent metadata/match view. Refresh leases are shared across instances, expire after thirty minutes, and can only be released by their owner. Fixture and live namespaces remain separate. Vercel without a database connection returns a clear setup error; it never silently falls back to an ephemeral file. Local SQLite history is not uploaded to Git; a new cloud database imports live history through the provider on its first sync.
 
 Regular `npm run build` output runs with `npm start`. The Docker build sets `BUILD_STANDALONE=true` and runs the generated standalone server instead, so local startup does not emit a mismatched-output warning.
 

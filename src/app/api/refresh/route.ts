@@ -5,6 +5,7 @@ import { allowedOrigin } from "@/lib/origin";
 import { setupStatus } from "@/lib/readiness";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 export async function POST(request: Request) {
   if (!allowedOrigin(request, process.env.APP_ORIGIN))
     return NextResponse.json(
@@ -19,6 +20,10 @@ export async function POST(request: Request) {
       },
     );
   } catch (error) {
+    console.error(
+      "Court refresh failed",
+      error instanceof Error ? error.name : "UnknownError",
+    );
     return NextResponse.json(
       {
         setup: setupStatus(),
