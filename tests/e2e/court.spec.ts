@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { trackedAccounts } from "../../src/config/players";
+import type { DashboardData } from "../../src/lib/model";
 test("configured real accounts show an honest connection state and demo is an explicit choice", async ({
   page,
 }) => {
@@ -104,9 +105,8 @@ test("the complete court: navigation, comparisons, evidence, scoreboards, agents
     .getByRole("navigation")
     .getByRole("link", { name: /Match history/ })
     .click();
-  await page
-    .getByRole("combobox", { name: "Player", exact: true })
-    .selectOption("friend-2");
+  await page.getByRole("combobox", { name: "Player", exact: true }).click();
+  await page.getByRole("option", { name: "alibi", exact: true }).click();
   const row = page.locator(".match-item").first();
   await row.getByRole("button").first().click();
   await expect(row.locator("tbody tr")).toHaveCount(10);
@@ -116,8 +116,8 @@ test("the complete court: navigation, comparisons, evidence, scoreboards, agents
   await expect(row.locator(".scoreboard")).not.toBeVisible();
   await page
     .getByRole("combobox", { name: "Map", exact: true })
-    .selectOption("Ascent");
-  await expect(page.locator(".match-map").first()).toContainText("Ascent");
+    .selectOption("Haven");
+  await expect(page.locator(".match-map").first()).toContainText("Haven");
   await page
     .getByRole("navigation")
     .getByRole("link", { name: /Agents/ })
@@ -142,9 +142,16 @@ test("the complete court: navigation, comparisons, evidence, scoreboards, agents
   );
   const r = await page.request.get("/api/dashboard?demo=1");
   expect(r.ok()).toBeTruthy();
-  const data = await r.json();
-  expect(data.matches).toHaveLength(36);
-  expect(new Set(data.matches.map((m: { id: string }) => m.id)).size).toBe(36);
+  const data: DashboardData = await r.json();
+  expect(data.matches).toHaveLength(30);
+  expect(new Set(data.matches.map((m) => m.id)).size).toBe(30);
+  expect(
+    data.matches.every(
+      (m) =>
+        m.players.filter((p) => data.friends.some((f) => f.id === p.id))
+          .length >= 2,
+    ),
+  ).toBeTruthy();
   expect(data.lastSync).toBeTruthy();
   await page
     .getByRole("button", { name: "Court settings and data setup" })

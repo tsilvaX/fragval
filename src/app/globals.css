@@ -1377,6 +1377,63 @@ tbody td {
   font-size: 10px;
   color: var(--muted);
 }
+.filters > .player-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.player-picker {
+  position: relative;
+  min-width: 0;
+  width: 160px;
+}
+.player-picker > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 33px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+}
+.player-picker > button > svg {
+  flex-shrink: 0;
+}
+.player-options {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  width: max(100%, 200px);
+  z-index: 30;
+  max-height: min(320px, 60vh);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  box-shadow: 0 8px 24px #0005;
+}
+.player-options > button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+}
+.player-options > button[data-active="true"] {
+  background: var(--paper-deep);
+}
+.player-options > button[aria-selected="true"] {
+  color: var(--lime);
+}
 .filter-count {
   font: 8px var(--font-mono);
   color: var(--muted);
@@ -4078,5 +4135,73 @@ summary:focus-visible {
   }
   .configured-roster li > span {
     font-size: 8px;
+  }
+}
+
+/* Keep linked accounts together wherever a player is named. */
+.player-names {
+  display: inline-grid;
+  vertical-align: middle;
+  gap: 3px;
+  min-width: 0;
+  max-width: 100%;
+  line-height: 1.25;
+  text-align: left;
+  white-space: normal;
+}
+.player-names > .player-name-line {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.player-names .account-tag {
+  display: inline;
+  margin: 0 0 0 3px;
+  font: 0.7em var(--font-mono);
+  color: var(--muted);
+}
+.player-identity h3 {
+  min-width: 0;
+  white-space: normal;
+  overflow: visible;
+}
+.bar-player > .player-names,
+.award-ranking > button > .player-names {
+  flex: 1;
+  white-space: normal;
+  overflow: visible;
+}
+.duo-names,
+.duo-names > span {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.duo-name-plus {
+  color: var(--muted);
+}
+.roster-preview h2 .player-names {
+  font-size: 0.85em;
+}
+.configured-roster li > .player-names {
+  font-size: inherit;
+}
+@media (max-width: 600px) {
+  .filters > .player-filter {
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1 0 100%;
+    min-width: 0;
+    gap: 5px;
+    font-size: 9px;
+  }
+  .player-picker {
+    width: 100%;
+  }
+  .player-picker > button {
+    font-size: 8px;
+    padding: 8px 5px;
   }
 }

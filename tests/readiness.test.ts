@@ -14,6 +14,11 @@ test("the exact four consented Riot IDs are configured without guessed ranks or 
     ],
   );
   assert.ok(trackedAccounts.every((p) => p.consent && p.agent === "Unknown"));
+  assert.deepEqual(trackedAccounts[1].aliases, [
+    { name: "breedableboy24", tag: "1234" },
+  ]);
+  assert.equal(setupStatus().accounts.length, 4);
+  assert.deepEqual(setupStatus().accounts[1].aliases, ["breedableboy24#1234"]);
 });
 test("default live mode never silently substitutes fixtures and the explicit demo remains available", () => {
   const saved = process.env.DATA_PROVIDER;

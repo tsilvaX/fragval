@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { normalizeHenrik } from "../src/lib/providers/henrik";
+import type { Friend } from "../src/lib/model";
+import { aggregate, calculateAwards, sharedMatches } from "../src/lib/stats";
 import {
   requestJson,
   ProviderError,
@@ -82,6 +84,104 @@ test("nonconsenting player IDs and names are discarded before storage", () => {
   assert.ok(!payload.includes("SECRET"));
   assert.ok(!payload.includes('"p1"'));
   assert.equal(m.players[0].name, "Player 1");
+});
+test("linked accounts combine weighted totals, awards and history under one profile", () => {
+  const friends: Friend[] = [
+    {
+      id: "primary",
+      name: "HomelessSlayer94",
+      tag: "142",
+      color: "#fff",
+      rank: null,
+      agent: "Unknown",
+      accounts: [
+        { id: "primary", name: "HomelessSlayer94", tag: "142" },
+        { id: "alternate", name: "breedableboy24", tag: "1234" },
+      ],
+    },
+    {
+      id: "teammate",
+      name: "Friend",
+      tag: "GG",
+      color: "#fff",
+      rank: null,
+      agent: "Unknown",
+    },
+  ];
+  const act = {
+    id: "act-1",
+    name: "Act",
+    startsAt: "2026-10-01T00:00:00Z",
+    endsAt: "2026-11-01T00:00:00Z",
+    source: "test",
+  };
+  const lobby = (accountId: string, id: string) => {
+    const source = raw();
+    source.metadata.match_id = id;
+    source.players = Array.from({ length: 10 }, (_, i) => ({
+      ...structuredClone(source.players[0]),
+      puuid: i === 0 ? accountId : i === 1 ? "teammate" : `guest-${i}`,
+      team_id: i < 5 ? "opaque-team-A" : "opaque-team-B",
+      stats: {
+        ...source.players[0].stats,
+        score: (i === 0 ? 50 : 200 + i) * 21,
+        kills: i === 0 ? 10 : 20,
+        deaths: 10,
+      },
+    }));
+    return source;
+  };
+  const primary = normalizeHenrik(lobby("primary", "primary-match"), friends);
+  const alternate = normalizeHenrik(
+    lobby("alternate", "alternate-match"),
+    friends,
+  );
+  alternate.players[0].kills = 30;
+  const matches = [primary, alternate, alternate];
+  assert.equal(alternate.players[0].id, "primary");
+  assert.equal(alternate.players[0].name, "breedableboy24#1234");
+  assert.equal(
+    sharedMatches(
+      matches,
+      friends.map((f) => f.id),
+      act,
+    ).length,
+    2,
+  );
+  const stats = aggregate(matches, "primary");
+  assert.equal(stats.matches, 2);
+  assert.equal(stats.kills, 40);
+  assert.equal(stats.deaths, 20);
+  assert.equal(stats.kd, 2);
+  assert.equal(stats.acs, 50);
+  assert.deepEqual(
+    calculateAwards(
+      matches,
+      friends.map((f) => f.id),
+      act,
+    )[0].entries[0].matchIds,
+    [primary.id, alternate.id],
+  );
+  // Two accounts belonging to one person cannot satisfy the two-friend rule.
+  const solo = lobby("alternate", "solo");
+  solo.players[1].puuid = "untracked";
+  assert.equal(
+    sharedMatches(
+      [normalizeHenrik(solo, friends)],
+      friends.map((f) => f.id),
+      act,
+    ).length,
+    0,
+  );
+  solo.players[1].puuid = "primary";
+  assert.equal(
+    sharedMatches(
+      [normalizeHenrik(solo, friends)],
+      friends.map((f) => f.id),
+      act,
+    ).length,
+    0,
+  );
 });
 test("unknown team IDs and malformed score fields fail validation", () => {
   const a = raw();

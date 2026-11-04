@@ -141,6 +141,17 @@ test("no titles, duos or carrier are fabricated for empty or unsupported matches
     ),
   );
 });
+test("solo games do not change squad titles, pairings or carrier totals", () => {
+  const matches = [game(1), game(2), game(3)];
+  const solo = game(4, [50, 250, 200, 100]);
+  solo.players.forEach((p, i) => {
+    if (i > 0) p.id = `untracked-${i}`;
+  });
+  assert.deepEqual(
+    squadInsights([...matches, solo], friends, fixtureAct),
+    squadInsights(matches, friends, fixtureAct),
+  );
+});
 
 test("ties share titles and carry credit, while zero awards and zero-over-zero K/D earn no title", () => {
   const matches = [

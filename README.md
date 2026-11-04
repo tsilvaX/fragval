@@ -22,7 +22,7 @@ npm.cmd run setup:live
 npm.cmd run dev
 ```
 
-Open **http://127.0.0.1:3000** and use the app directly. No login, username or password is required. The four real accounts below are already configured. The secure setup command validates your server's HenrikDev key, saves it only in ignored `.env.local`, and enables live mode and automatic region detection. Visitors never enter the provider key.
+Open **http://127.0.0.1:3000** and use the app directly. No login, username or password is required. The four real player profiles below are already configured. The secure setup command validates your server's HenrikDev key, saves it only in ignored `.env.local`, and enables live mode and automatic region detection. Visitors never enter the provider key.
 
 If you do not have a key yet, run `npm run dev` and use the connection screen. The complete offline exhibition remains available at **http://127.0.0.1:3000/?demo=1** without API credentials. Its 36 fictional matches are deterministic and are never assigned to your real accounts. SQLite is created automatically in `data/`.
 
@@ -33,7 +33,7 @@ If you do not have a key yet, run `npm run dev` and use the connection screen. T
 - Partners in Crime: two disjoint duo pairings chosen from same-team results, with a three-game minimum and sample-adjusted win rates. The illustrated squad cart assigns its puller from combat-score advantage over tracked teammates in the latest ten shared games. Faces follow player names; titles, pairings and the driver recalculate when refreshed data arrives. Motion can be paused and respects reduced-motion preferences.
 - Head to head: zero-based comparative bars, signed damage deltas, a side-by-side table, ACS trends, and agent leaders with a five-match threshold.
 - The Court: full-lobby Bottom Frag King, Match MVP, kill leader, friend-group carry and liability, plus a K/D tab for best and worst kills-to-deaths ratio per match, excluding assists. Inspect each player's contributing matches.
-- History: unique shared matches, player/map/result filters, pagination, and ten-player scoreboards with tracked-friend highlights.
+- History: unique matches with at least two tracked friends, player/map/result filters, pagination, and ten-player scoreboards with tracked-friend highlights. Solo games are excluded from all displayed stats, awards and exports, including previously cached results.
 - Agents: weighted per-agent aggregates, sample indicators and cross-friend comparisons.
 - Armory: actual all-weapons hit-region counts. Weapon-specific metrics explicitly remain unavailable.
 - Refresh: persistent Neon Postgres on Vercel or SQLite locally, ID deduplication, PUUID resolution cache, refresh locking, provider retries and rate-limit handling.
@@ -44,9 +44,11 @@ If you do not have a key yet, run `npm run dev` and use the connection screen. T
 The live adapter uses documented **HenrikDev v4 match details**, v1 stored history, v2 account resolution and v3 MMR. The roster in [`src/config/players.ts`](src/config/players.ts) is:
 
 - `Mini Wo0t#ESP1`
-- `HomelessSlayer94#142`
+- `HomelessSlayer94#142`, including alternate account `breedableboy24#1234`
 - `kotoris kitten#6874`
 - `kotooriiii#4236`
+
+Linked accounts share one player profile, combined statistics, awards and history filters. Both account names appear stacked throughout the dashboard, charts, awards, player selectors and scoreboards. Scoreboard name tooltips identify the account used in the match, and the profile's current rank comes from its primary account. The two-friend rule counts player profiles, so solo games on either linked account remain excluded. Refreshing also rebuilds available cached scoreboards using the new account mapping; follow any retrieval-budget warning and refresh again to finish older history.
 
 The operator confirmed the four owners' consent. Provider-required authorization is separate. Use `npm run setup:live` after obtaining permitted key access, or manually configure the ignored `.env.local`:
 

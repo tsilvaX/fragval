@@ -10,11 +10,13 @@ import {
 import type { Friend, Match } from "@/lib/model";
 import { aggregate, placement, scoreboard, won } from "@/lib/stats";
 import catalog from "@/config/assets.json";
+import { PlayerFilter } from "./player-filter";
 import {
   AgentImage,
   fmt,
   MetricLabel,
   PlayerDot,
+  PlayerName,
   SectionHeading,
   TextLink,
 } from "./primitives";
@@ -74,7 +76,9 @@ export function Scoreboard({
                     <div className="scoreboard-player">
                       <AgentImage agent={p.agent} />
                       <div>
-                        <strong>{p.name}</strong>
+                        <strong title={f ? `Played as ${p.name}` : undefined}>
+                          {f ? <PlayerName friend={f} showTags /> : p.name}
+                        </strong>
                         <small>
                           {p.agent}
                           {f ? " · TRACKED FRIEND" : " · ANONYMOUS"}
@@ -127,6 +131,7 @@ export function MatchRow({
     match.players.find((p) => p.id === playerId) ??
     match.players.find((p) => friends.some((f) => f.id === p.id))!;
   if (!p) return null;
+  const friend = friends.find((f) => f.id === p.id);
   const stats = aggregate([match], p.id),
     victory = won(p, match),
     draw = match.red === match.blue;
@@ -166,7 +171,9 @@ export function MatchRow({
         <div className="match-agent">
           <AgentImage agent={p.agent} />
           <div>
-            <strong>{p.name.split("#")[0]}</strong>
+            <strong>
+              {friend ? <PlayerName friend={friend} /> : p.name.split("#")[0]}
+            </strong>
             <small>
               {p.agent} · {victory ? "Victory" : draw ? "Draw" : "Defeat"}
             </small>
@@ -293,23 +300,14 @@ export function MatchHistory({
       {!compact && (
         <div className="filters">
           <Search size={16} />
-          <label>
-            Player
-            <select
-              value={player}
-              onChange={(e) => {
-                setPlayer(e.target.value);
-                setPage(0);
-              }}
-            >
-              <option value="all">All friends</option>
-              {friends.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <PlayerFilter
+            friends={friends}
+            value={player}
+            onChange={(id) => {
+              setPlayer(id);
+              setPage(0);
+            }}
+          />
           <label>
             Map
             <select

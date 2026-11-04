@@ -26,6 +26,7 @@ export function setupStatus(): SetupStatus {
     })(),
     accounts: trackedAccounts.map((p) => ({
       riotId: `${p.name}#${p.tag}`,
+      aliases: p.aliases?.map((a) => `${a.name}#${a.tag}`),
       consent: p.consent,
       color: p.color,
     })),

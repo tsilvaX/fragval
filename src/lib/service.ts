@@ -3,10 +3,10 @@ import { fixtureFriends } from "../config/players";
 import { fixtureAct, fixtureMatches } from "./fixtures";
 import type { DashboardData, Mode } from "./model";
 import { getStore } from "./persistence";
-import { HenrikProvider } from "./providers/henrik";
+import { HenrikProvider, henrikRosterKey } from "./providers/henrik";
 import { RiotProvider } from "./providers/riot";
 import { ProviderError } from "./providers/http";
-import { eligibleMatch, agentStats } from "./stats";
+import { eligibleMatch, agentStats, sharedMatches } from "./stats";
 import { configuredMode } from "./readiness";
 export function dataMode(demo = false): Mode {
   try {
@@ -18,8 +18,20 @@ export function dataMode(demo = false): Mode {
     );
   }
 }
-function withObservedAgents(data: DashboardData): DashboardData {
-  if (data.mode === "fixture") return data;
+function prepareDashboard(data: DashboardData): DashboardData {
+  data = {
+    ...data,
+    matches: sharedMatches(
+      data.matches,
+      data.friends.map((f) => f.id),
+      data.act,
+    ),
+  };
+  if (data.mode === "fixture")
+    return {
+      ...data,
+      coverage: `${data.matches.length} deterministic shared exhibition matches. Fictional accounts and results; this is not live VALORANT data.`,
+    };
   return {
     ...data,
     friends: data.friends.map((friend) => ({
@@ -46,7 +58,16 @@ export async function synchronize(demo = false): Promise<{
       (mode === "fixture" || Date.now() < Date.parse(previous.act.endsAt)) &&
       Date.now() - Date.parse(previous.lastSync) < 15000
     )
-      return { data: withObservedAgents(previous), added: 0 };
+      return { data: prepareDashboard(previous), added: 0 };
+    const rosterKey = mode === "henrik" ? henrikRosterKey() : undefined;
+    // A roster change can turn an anonymous participant into a linked account.
+    // Revisit old mappings until every available scoreboard is updated, even
+    // when the provider's budget spreads this work across multiple refreshes.
+    const normalizedIds = new Set(
+      previous?.matches
+        .filter((m) => mode !== "henrik" || m.rosterKey === rosterKey)
+        .map((m) => m.id),
+    );
     const snapshot =
       mode === "fixture"
         ? {
@@ -61,13 +82,22 @@ export async function synchronize(demo = false): Promise<{
             mode === "henrik"
               ? new HenrikProvider(store.resolveIdentity)
               : new RiotProvider()
-          ).sync(new Set(previous?.matches.map((m) => m.id)));
+          ).sync(normalizedIds);
     snapshot.matches = snapshot.matches.filter((m) =>
       eligibleMatch(m, snapshot.act),
     );
-    const added = await store.saveSnapshot(mode, snapshot);
+    // Retain valid solo records internally so sync does not repeatedly fetch
+    // their scoreboards and exhaust its retrieval budget. Only shared games
+    // contribute to the dashboard or its new-match count.
+    const knownIds = new Set(previous?.matches.map((m) => m.id));
+    const added = sharedMatches(
+      snapshot.matches,
+      snapshot.friends.map((f) => f.id),
+      snapshot.act,
+    ).filter((m) => !knownIds.has(m.id)).length;
+    await store.saveSnapshot(mode, snapshot);
     return {
-      data: withObservedAgents((await store.readSnapshot(mode))!),
+      data: prepareDashboard((await store.readSnapshot(mode))!),
       added,
     };
   } finally {
@@ -82,5 +112,5 @@ export async function getDashboard(demo = false) {
     // Never return last act's cached totals as the current act.
     return (await synchronize(demo)).data;
   }
-  return withObservedAgents(existing);
+  return prepareDashboard(existing);
 }

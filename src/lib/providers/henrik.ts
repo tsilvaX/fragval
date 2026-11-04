@@ -1,10 +1,28 @@
 import { z } from "zod";
+import { createHash } from "node:crypto";
 import { trackedAccounts, type TrackedAccount } from "../../config/players";
 import type { Act, Friend, Match } from "../model";
 import type { MatchProvider } from "./contract";
 import { requestJson, ProviderError } from "./http";
 import { eligibleMatch } from "../stats";
 const count = z.number().int().nonnegative();
+export function henrikRosterKey(
+  accounts: readonly TrackedAccount[] = trackedAccounts,
+): string {
+  return createHash("sha256")
+    .update(
+      JSON.stringify(
+        accounts.map((account) =>
+          [account, ...(account.aliases ?? [])].map(({ name, tag, puuid }) => [
+            name.toLowerCase(),
+            tag.toLowerCase(),
+            puuid ?? null,
+          ]),
+        ),
+      ),
+    )
+    .digest("hex");
+}
 const rawMatch = z.object({
   metadata: z.object({
     match_id: z.string(),
@@ -54,12 +72,18 @@ export function normalizeHenrik(raw: unknown, friends: Friend[]): Match {
     red: red.rounds.won,
     blue: blue.rounds.won,
     players: m.players.map((p, i) => {
-      const friend = friends.find((f) => f.id === p.puuid);
+      const friend = friends.find(
+        (f) =>
+          f.id === p.puuid ||
+          f.accounts?.some((account) => account.id === p.puuid),
+      );
+      const identity =
+        friend?.accounts?.find((account) => account.id === p.puuid) ?? friend;
       if (p.team_id !== red.team_id && p.team_id !== blue.team_id)
         throw new Error("Unknown team ID");
       return {
         id: friend?.id ?? `anonymous-${m.metadata.match_id}-${i}`,
-        name: friend ? `${friend.name}#${friend.tag}` : `Player ${i + 1}`,
+        name: identity ? `${identity.name}#${identity.tag}` : `Player ${i + 1}`,
         team: p.team_id === red.team_id ? "Red" : "Blue",
         agent: p.agent.name,
         kills: p.stats.kills,
@@ -167,10 +191,20 @@ export class HenrikProvider implements MatchProvider {
       source:
         "VALORANT-API season dates and type; ID verified against Riot content via HenrikDev",
     };
-    const friends: Friend[] = [];
+    const accounts = this.accounts.flatMap((profile, profileIndex) => [
+      { ...profile, profileIndex, primary: true },
+      ...(profile.aliases ?? []).map((identity) => ({
+        ...profile,
+        puuid: undefined,
+        ...identity,
+        profileIndex,
+        primary: false,
+      })),
+    ]);
+    const resolvedAccounts: (Friend & { profileIndex: number })[] = [];
     const regions = new Map<string, string>();
     const warnings: string[] = [];
-    for (const account of this.accounts) {
+    for (const account of accounts) {
       let detectedRegion: string | undefined;
       const lookupAccount = async (path: string) => {
         const resolved = z
@@ -205,25 +239,27 @@ export class HenrikProvider implements MatchProvider {
         );
       regions.set(id, region);
       let rank: string | null = null;
-      try {
-        rank = z
-          .object({
-            data: z.object({
-              current: z.object({ tier: z.object({ name: z.string() }) }),
-            }),
-          })
-          .parse(
-            await get(
-              `/valorant/v3/by-puuid/mmr/${region}/${platform}/${encodeURIComponent(id)}`,
-            ),
-          ).data.current.tier.name;
-      } catch {
-        warnings.push(
-          `${account.name}: current rank is unavailable. Match statistics are still supported.`,
-        );
-      }
-      friends.push({
+      if (account.primary)
+        try {
+          rank = z
+            .object({
+              data: z.object({
+                current: z.object({ tier: z.object({ name: z.string() }) }),
+              }),
+            })
+            .parse(
+              await get(
+                `/valorant/v3/by-puuid/mmr/${region}/${platform}/${encodeURIComponent(id)}`,
+              ),
+            ).data.current.tier.name;
+        } catch {
+          warnings.push(
+            `${account.name}: current rank is unavailable. Match statistics are still supported.`,
+          );
+        }
+      resolvedAccounts.push({
         id,
+        profileIndex: account.profileIndex,
         name: account.name,
         tag: account.tag,
         agent: account.agent,
@@ -231,18 +267,32 @@ export class HenrikProvider implements MatchProvider {
         rank,
       });
     }
-    if (new Set(friends.map((f) => f.id)).size !== friends.length)
+    if (
+      new Set(resolvedAccounts.map((f) => f.id)).size !==
+      resolvedAccounts.length
+    )
       throw new ProviderError(
         "Each tracked account must resolve to a unique PUUID.",
       );
+    const friends: Friend[] = this.accounts.map((_, index) => {
+      const identities = resolvedAccounts.filter(
+        (account) => account.profileIndex === index,
+      );
+      const { profileIndex: _index, ...primary } = identities[0];
+      return {
+        ...primary,
+        accounts: identities.map(({ id, name, tag }) => ({ id, name, tag })),
+      };
+    });
+    const rosterKey = henrikRosterKey(this.accounts);
     const matches = new Map<string, Match>();
     let skipped = 0;
     const deadline = Date.now() + 120000;
     let details = 0;
     try {
-      history: for (const f of friends) {
+      history: for (const f of resolvedAccounts) {
         const region = regions.get(f.id)!;
-        // Paginate the materialized history, then fetch only unseen full scoreboards.
+        // Fetch unseen scoreboards and records normalized with an older roster.
         for (let page = 1; page <= 20; page++) {
           if (Date.now() >= deadline) {
             warnings.push(
@@ -282,7 +332,7 @@ export class HenrikProvider implements MatchProvider {
               continue;
             if (details >= 40 || Date.now() >= deadline) {
               warnings.push(
-                "Refresh reached its 40-new-scoreboard or two-minute retrieval budget. Retrieved progress was saved; refresh again to continue.",
+                "Refresh reached its 40-scoreboard or two-minute retrieval budget. Retrieved progress was saved; refresh again to continue.",
               );
               break history;
             }
@@ -297,7 +347,7 @@ export class HenrikProvider implements MatchProvider {
             try {
               const m = normalizeHenrik(payload.data, friends);
               if (m.id === entry.meta.id && eligibleMatch(m, act))
-                matches.set(m.id, m);
+                matches.set(m.id, { ...m, rosterKey });
               else skipped++;
             } catch {
               skipped++;

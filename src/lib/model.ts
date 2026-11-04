@@ -1,7 +1,12 @@
 export type Mode = "fixture" | "henrik" | "riot";
 export type SetupStatus = {
   provider: Mode | null;
-  accounts: { riotId: string; consent: boolean; color: string }[];
+  accounts: {
+    riotId: string;
+    aliases?: string[];
+    consent: boolean;
+    color: string;
+  }[];
   hasKey: boolean;
   authorized: boolean;
   rosterReady: boolean;
@@ -17,6 +22,7 @@ export type Act = {
 };
 export type Friend = {
   id: string;
+  accounts?: { id: string; name: string; tag: string }[];
   name: string;
   tag: string;
   color: string;
@@ -41,6 +47,8 @@ export type Participant = {
 };
 export type Match = {
   id: string;
+  // Identifies the account mapping used to normalize this cached scoreboard.
+  rosterKey?: string;
   actId: string;
   startedAt: string;
   map: string;

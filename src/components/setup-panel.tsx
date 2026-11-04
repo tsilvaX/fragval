@@ -8,6 +8,7 @@ import {
   Users,
 } from "lucide-react";
 import type { SetupStatus } from "@/lib/model";
+import { AccountNames } from "./primitives";
 
 export function SetupPanel({
   setup,
@@ -37,9 +38,7 @@ export function SetupPanel({
             data access is connected.
           </p>
         </div>
-        <span className="tag">
-          {setup?.accounts.length ?? 0} ACCOUNTS READY
-        </span>
+        <span className="tag">{setup?.accounts.length ?? 0} PLAYERS READY</span>
       </div>
       <div className="roster-preview">
         {setup?.accounts.map((account, i) => (
@@ -48,8 +47,17 @@ export function SetupPanel({
             style={{ borderTopColor: account.color }}
           >
             <span className="eyebrow muted">PLAYER 0{i + 1}</span>
-            <h2>{account.riotId.split("#")[0]}</h2>
-            <p>#{account.riotId.split("#")[1]}</p>
+            <h2>
+              <AccountNames
+                accounts={[account.riotId, ...(account.aliases ?? [])].map(
+                  (riotId) => ({
+                    name: riotId.split("#")[0],
+                    tag: riotId.split("#")[1],
+                  }),
+                )}
+                showTags
+              />
+            </h2>
             <span className="roster-status">
               <ShieldCheck size={13} />
               {account.consent ? "Consent confirmed" : "Consent needed"}

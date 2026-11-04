@@ -1,10 +1,13 @@
 // Live roster. The operator confirmed all four owners' consent on 2026-10-31.
 // Provider access/authorization is configured separately on the server.
 // Resolve once by Riot ID; the resulting PUUID is persisted in SQLite.
-export type TrackedAccount = {
+export type AccountIdentity = {
   name: string;
   tag: string;
   puuid?: string;
+};
+export type TrackedAccount = AccountIdentity & {
+  aliases?: AccountIdentity[];
   consent: boolean;
   color: string;
   agent: string;
@@ -20,6 +23,7 @@ export const trackedAccounts: TrackedAccount[] = [
   {
     name: "HomelessSlayer94",
     tag: "142",
+    aliases: [{ name: "breedableboy24", tag: "1234" }],
     consent: true,
     color: "#637b91",
     agent: "Unknown",

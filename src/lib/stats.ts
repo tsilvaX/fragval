@@ -32,6 +32,18 @@ export function eligibleMatch(m: Match, act: Act): boolean {
 export function uniqueMatches(matches: Match[]): Match[] {
   return [...new Map(matches.map((m) => [m.id, m])).values()];
 }
+export function sharedMatches(
+  matches: Match[],
+  friendIds: string[],
+  act: Act,
+): Match[] {
+  const ids = new Set(friendIds);
+  return uniqueMatches(matches).filter(
+    (m) =>
+      eligibleMatch(m, act) &&
+      m.players.filter((p) => ids.has(p.id)).length >= 2,
+  );
+}
 // Equal combat scores share a placement. No arbitrary kills/name tie-breaker.
 export function placement(p: Participant, m: Match): number {
   return (
@@ -144,9 +156,7 @@ export function calculateAwards(
   friendIds: string[],
   act: Act,
 ): Award[] {
-  const qualifying = uniqueMatches(matches).filter((m) =>
-    eligibleMatch(m, act),
-  );
+  const qualifying = sharedMatches(matches, friendIds, act);
   return awardDefinitions.map((def) => {
     const kd = def.key === "best-kd" || def.key === "worst-kd";
     const valueOf = (p: Participant): number | null => {

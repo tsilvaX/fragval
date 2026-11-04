@@ -48,10 +48,14 @@ export function saveSnapshot(mode: Mode, snapshot: ProviderSnapshot): number {
     const insert = d.prepare(
       "INSERT OR IGNORE INTO matches(mode,id,act,payload) VALUES(?,?,?,?)",
     );
-    for (const m of snapshot.matches)
-      added += Number(
-        insert.run(mode, m.id, m.actId, JSON.stringify(m)).changes,
-      );
+    const update = d.prepare(
+      "UPDATE matches SET act=?,payload=? WHERE mode=? AND id=? AND payload<>?",
+    );
+    for (const m of snapshot.matches) {
+      const payload = JSON.stringify(m);
+      added += Number(insert.run(mode, m.id, m.actId, payload).changes);
+      update.run(m.actId, payload, mode, m.id, payload);
+    }
     d.prepare(
       "INSERT OR REPLACE INTO snapshots(mode,payload,last_sync) VALUES(?,?,?)",
     ).run(

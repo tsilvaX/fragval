@@ -6,6 +6,8 @@ import { Pause, Play, Link2, MoveUpRight } from "lucide-react";
 import type { DashboardData, Friend } from "@/lib/model";
 import type { squadInsights } from "@/lib/squad";
 import { playerPortrait } from "@/config/portraits";
+import { playerLabel } from "@/lib/player-names";
+import { PlayerName } from "./primitives";
 
 type Insights = ReturnType<typeof squadInsights>;
 
@@ -58,7 +60,7 @@ export function SquadSpotlight({
     : [];
   const otherLeaders = insights.carriers
     .slice(1)
-    .map((s) => data.friends.find((f) => f.id === s.playerId)!.name);
+    .map((s) => data.friends.find((f) => f.id === s.playerId)!);
 
   return (
     <section className="squad-spotlight" aria-labelledby="cart-heading">
@@ -90,12 +92,12 @@ export function SquadSpotlight({
         >
           <title id="cart-scene-title">
             {carrier
-              ? `${carrier.name} is pulling the squad cart`
+              ? `${playerLabel(carrier)} is pulling the squad cart`
               : "Squad cart awaiting a carrier"}
           </title>
           <desc id="cart-scene-description">
             {carrier
-              ? `${riders.map((f) => f.name).join(", ")} ride in the cart. The puller has the highest average ACS advantage over tracked teammates in the latest ten shared matches, with at least three appearances.`
+              ? `${riders.map((f) => playerLabel(f)).join(", ")} ride in the cart. The puller has the highest average ACS advantage over tracked teammates in the latest ten shared matches, with at least three appearances.`
               : "A carrier is chosen after at least three shared games with a positive combat-score advantage over tracked teammates."}
           </desc>
           <path d="M30 251H770" className="cart-ground" />
@@ -195,7 +197,11 @@ export function SquadSpotlight({
             {carrier ? "TODAY’S DESIGNATED ENGINE" : "NO VOLUNTEERS. YET."}
           </span>
           <h3>
-            {carrier?.name ?? "Waiting for a clear carry"}
+            {carrier ? (
+              <PlayerName friend={carrier} />
+            ) : (
+              "Waiting for a clear carry"
+            )}
             {carrier && <MoveUpRight size={23} />}
           </h3>
           <p>
@@ -205,8 +211,14 @@ export function SquadSpotlight({
           </p>
           {otherLeaders.length > 0 && (
             <p className="carry-tie">
-              Shared lead with {otherLeaders.join(" and ")}. {carrier?.name}{" "}
-              takes this shift.
+              Shared lead with{" "}
+              {otherLeaders.map((f, i) => (
+                <span key={f.id}>
+                  {i > 0 && " and "}
+                  <PlayerName friend={f} />
+                </span>
+              ))}
+              . {carrier && <PlayerName friend={carrier} />} takes this shift.
             </p>
           )}
         </div>
@@ -217,7 +229,7 @@ export function SquadSpotlight({
               {riders.map((f) => (
                 <span key={f.id}>
                   <PlayerFace friend={f} size={30} />
-                  {f.name}
+                  <PlayerName friend={f} />
                 </span>
               ))}
             </div>
@@ -271,7 +283,16 @@ export function SquadSpotlight({
                     <Link2 size={14} />
                   </div>
                   <div>
-                    <h4>{pair.map((f) => f.name).join(" + ")}</h4>
+                    <h4 className="duo-names">
+                      {pair.map((f, index) => (
+                        <span key={f.id}>
+                          {index > 0 && (
+                            <span className="duo-name-plus"> + </span>
+                          )}
+                          <PlayerName friend={f} />
+                        </span>
+                      ))}
+                    </h4>
                     <p>
                       {duo.wins}W / {duo.matches - duo.wins - duo.draws}L
                       {duo.draws ? ` / ${duo.draws}D` : ""} · {duo.matches}{" "}

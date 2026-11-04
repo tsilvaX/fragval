@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { DashboardData, Friend } from "@/lib/model";
 import { aggregate, agentStats } from "@/lib/stats";
+import { profileAccounts, playerLabel } from "@/lib/player-names";
 import {
   AgentImage,
   ComparisonBars,
@@ -19,6 +20,7 @@ import {
   MetricLabel,
   type MetricKey,
   PlayerDot,
+  PlayerName,
   playerStyle,
   SectionHeading,
   TextLink,
@@ -91,17 +93,38 @@ export function PlayerCards({
             <div className="player-card-body">
               <div className="player-identity">
                 <PlayerDot friend={f} />
-                <h3>{f.name}</h3>
-                <span>#{f.tag}</span>
+                <h3>
+                  <PlayerName
+                    friend={f}
+                    showTags={profileAccounts(f).length > 1}
+                  />
+                </h3>
+                {profileAccounts(f).length === 1 && <span>#{f.tag}</span>}
               </div>
-              <div className="player-titles" aria-label={`${f.name} titles`}>
+              <div
+                className="player-titles"
+                aria-label={`${playerLabel(f)} titles`}
+              >
                 {insights.titles[f.id]?.length ? (
                   insights.titles[f.id].map((tag) => (
                     <details
                       className={`player-title title-${tag.tone}`}
                       key={tag.key}
                     >
-                      <summary>{tag.label}</summary>
+                      <summary>
+                        {tag.partnerId ? (
+                          <>
+                            Partners in Crime ·{" "}
+                            <PlayerName
+                              friend={data.friends.find(
+                                (friend) => friend.id === tag.partnerId,
+                              )!}
+                            />
+                          </>
+                        ) : (
+                          tag.label
+                        )}
+                      </summary>
                       <p>{tag.detail}</p>
                     </details>
                   ))
@@ -345,7 +368,7 @@ export function Comparison({ data }: { data: DashboardData }) {
                 {data.friends.map((f) => (
                   <th key={f.id}>
                     <PlayerDot friend={f} />
-                    {f.name}
+                    <PlayerName friend={f} />
                   </th>
                 ))}
               </tr>
@@ -430,11 +453,15 @@ function AgentComparison({ data }: { data: DashboardData }) {
               <div>
                 <h3>{agent}</h3>
                 <p>
-                  {first
-                    ? ties.length > 1
-                      ? `${ties.length} tied leaders`
-                      : first.f.name
-                    : "Building a sample"}
+                  {first ? (
+                    ties.length > 1 ? (
+                      `${ties.length} tied leaders`
+                    ) : (
+                      <PlayerName friend={first.f} />
+                    )
+                  ) : (
+                    "Building a sample"
+                  )}
                 </p>
               </div>
               <strong>
@@ -466,7 +493,7 @@ export function Agents({ data }: { data: DashboardData }) {
             onClick={() => setPlayer(f.id)}
           >
             <PlayerDot friend={f} />
-            {f.name}
+            <PlayerName friend={f} />
           </button>
         ))}
       </div>
@@ -559,7 +586,7 @@ export function Armory({ data }: { data: DashboardData }) {
             onClick={() => setPlayer(f.id)}
           >
             <PlayerDot friend={f} />
-            {f.name}
+            <PlayerName friend={f} />
           </button>
         ))}
       </div>

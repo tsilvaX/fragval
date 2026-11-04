@@ -14,11 +14,11 @@ import {
   WifiOff,
 } from "lucide-react";
 import type { DashboardData, SetupStatus } from "@/lib/model";
-import { eligibleMatch } from "@/lib/stats";
+import { sharedMatches } from "@/lib/stats";
 import { Overview, Comparison, Agents, Armory } from "./analytics";
 import { CourtAwards } from "./court-awards";
 import { MatchHistory } from "./match-history";
-import { Modal } from "./primitives";
+import { Modal, AccountNames } from "./primitives";
 import { SetupPanel } from "./setup-panel";
 const tabs = [
   { id: "overview", label: "Overview", num: "01" },
@@ -128,18 +128,22 @@ export function CourtApp() {
   const filteredData = data
     ? {
         ...data,
-        matches: data.matches.filter((m) => eligibleMatch(m, data.act)),
+        matches: sharedMatches(
+          data.matches,
+          data.friends.map((f) => f.id),
+          data.act,
+        ),
       }
     : null;
   function exportData() {
-    if (!data) return;
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
+    if (!filteredData) return;
+    const blob = new Blob([JSON.stringify(filteredData, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `frag-court-${data.mode}-${data.act.id}.json`;
+    a.download = `frag-court-${filteredData.mode}-${filteredData.act.id}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -347,7 +351,15 @@ export function CourtApp() {
               <ul className="configured-roster">
                 {setup?.accounts.map((p) => (
                   <li key={p.riotId}>
-                    {p.riotId}
+                    <AccountNames
+                      accounts={[p.riotId, ...(p.aliases ?? [])].map(
+                        (riotId) => ({
+                          name: riotId.split("#")[0],
+                          tag: riotId.split("#")[1],
+                        }),
+                      )}
+                      showTags
+                    />
                     <span>
                       {p.consent ? "Consent confirmed" : "Consent needed"}
                     </span>
@@ -367,8 +379,8 @@ export function CourtApp() {
                   provider access plus each friend’s required opt-in.
                 </li>
                 <li>
-                  Your four Riot IDs are already configured in{" "}
-                  <code>src/config/players.ts</code>.
+                  Your four player profiles and linked accounts are configured
+                  in <code>src/config/players.ts</code>.
                 </li>
                 <li>
                   Run <code>npm run setup:live</code> after obtaining permitted

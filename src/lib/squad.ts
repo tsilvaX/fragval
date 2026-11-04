@@ -1,14 +1,10 @@
 import type { Act, Friend, Match } from "./model";
-import {
-  aggregate,
-  calculateAwards,
-  eligibleMatch,
-  uniqueMatches,
-  won,
-} from "./stats";
+import { playerLabel } from "./player-names";
+import { aggregate, calculateAwards, sharedMatches, won } from "./stats";
 
 export type PlayerTitle = {
   key: string;
+  partnerId?: string;
   label: string;
   detail: string;
   tone: "fame" | "shame" | "neutral";
@@ -28,13 +24,11 @@ export type CarryStanding = {
 };
 
 export function squadInsights(matches: Match[], friends: Friend[], act: Act) {
-  const qualifying = uniqueMatches(matches)
-    .filter((m) => eligibleMatch(m, act))
-    .sort(
-      (a, b) =>
-        b.startedAt.localeCompare(a.startedAt) || a.id.localeCompare(b.id),
-    );
   const ids = friends.map((f) => f.id);
+  const qualifying = sharedMatches(matches, ids, act).sort(
+    (a, b) =>
+      b.startedAt.localeCompare(a.startedAt) || a.id.localeCompare(b.id),
+  );
   const titles: Record<string, PlayerTitle[]> = Object.fromEntries(
     ids.map((id) => [id, []]),
   );
@@ -198,9 +192,10 @@ export function squadInsights(matches: Match[], friends: Friend[], act: Act) {
       )!;
       titles[playerId].push({
         key: "duo",
-        label: `Partners in Crime · ${partner.name}`,
+        partnerId: partner.id,
+        label: `Partners in Crime · ${playerLabel(partner)}`,
         tone: "neutral",
-        detail: `${duo.wins} wins in ${duo.matches} same-team games with ${partner.name} (${duo.winRate.toFixed(0)}% win rate). Pairings maximize the number of disjoint duos, then their combined adjusted win rate: (wins + 1) / (games + 2). Ties use shared games, then combined ACS. Minimum three shared games.`,
+        detail: `${duo.wins} wins in ${duo.matches} same-team games with ${playerLabel(partner)} (${duo.winRate.toFixed(0)}% win rate). Pairings maximize the number of disjoint duos, then their combined adjusted win rate: (wins + 1) / (games + 2). Ties use shared games, then combined ACS. Minimum three shared games.`,
       });
     }
   }

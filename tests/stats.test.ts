@@ -7,6 +7,7 @@ import {
   placement,
   uniqueMatches,
   agentStats,
+  sharedMatches,
 } from "../src/lib/stats";
 import { fixtureAct, fixtureMatches } from "../src/lib/fixtures";
 import type { Match } from "../src/lib/model";
@@ -111,12 +112,50 @@ test("friend carry and liability compare friends even without the lobby winner",
     "p8",
   );
 });
-test("one tracked friend cannot earn group carry or liability", () => {
-  for (const key of ["carry", "liability"]) {
+test("solo matches cannot earn any court award", () => {
+  for (const key of [
+    "bottom",
+    "mvp",
+    "fragger",
+    "carry",
+    "liability",
+    "best-kd",
+    "worst-kd",
+  ]) {
     const a = award([match()], key, ["p0"]);
     assert.equal(a.eligible, 0);
     assert.equal(a.entries[0].matchIds.length, 0);
   }
+});
+test("shared matches require two distinct tracked friends, keep opponents, and deduplicate IDs", () => {
+  const m = match();
+  assert.equal(sharedMatches([m], [], fixtureAct).length, 0);
+  assert.equal(
+    sharedMatches([m], ["p0", "p0", "absent"], fixtureAct).length,
+    0,
+  );
+  assert.deepEqual(
+    sharedMatches([m, structuredClone(m)], ["p0", "p9"], fixtureAct),
+    [m],
+  );
+  m.completed = false;
+  assert.equal(sharedMatches([m], ["p0", "p9"], fixtureAct).length, 0);
+});
+test("bottom counter grows only for new shared matches with a sole tenth finish", () => {
+  const first = match();
+  const next = structuredClone(first);
+  next.id = "new-bottom";
+  const solo = structuredClone(first);
+  solo.id = "solo-bottom";
+  solo.players[0].id = "untracked-0";
+  solo.players[5].id = "untracked-5";
+  const tied = structuredClone(next);
+  tied.id = "tied-bottom";
+  tied.players[8].score = tied.players[9].score;
+  const count = (matches: Match[]) =>
+    award(matches, "bottom").entries.find((e) => e.playerId === "p9")!.matchIds;
+  assert.deepEqual(count([first]), [first.id]);
+  assert.deepEqual(count([first, next, next, solo, tied]), [first.id, next.id]);
 });
 test("shared and duplicate matches count once, even in the eligible denominator", () => {
   const m = match(),

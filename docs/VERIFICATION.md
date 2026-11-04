@@ -1,5 +1,11 @@
 # Verification record
 
+The shared-match regression requires at least two tracked friends for displayed statistics and awards, including legacy caches and refresh cooldown responses. Tests cover solo exclusions, unique match IDs, new shared-match counts, and an open Bottom Frag King evidence panel updating during refresh on desktop and mobile. Bottom Frag King retains the sole lowest combat score rule across all ten participants.
+
+Account-linking regressions cover primary and alternate history retrieval, one canonical profile, combined statistics and awards, solo exclusions, duplicate match IDs, primary-account rank, and rebuilding cached anonymous participants across multiple refreshes. Desktop and mobile profile tests check the linked-account label and the alternate Riot ID in the combined history.
+
+Linked-account display checks verify vertically stacked names across all six tabs at desktop, phone and 320px widths, including charts, tables, squad labels, awards, scoreboards, and the history selector. The selector supports pointer and keyboard selection. Existing cached profiles can display configured aliases before their next import.
+
 Validated locally on Windows with Node 26.13.0 and Next.js 16.4.3. CI targets Node 24 LTS on Linux.
 
 ## Results

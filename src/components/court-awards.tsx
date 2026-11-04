@@ -12,12 +12,12 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
-import type { Award, DashboardData } from "@/lib/model";
+import type { AwardKey, DashboardData } from "@/lib/model";
 import { calculateAwards } from "@/lib/stats";
 import {
-  AgentImage,
   Modal,
   PlayerDot,
+  PlayerName,
   SectionHeading,
   TextLink,
 } from "./primitives";
@@ -79,7 +79,7 @@ export function CourtTeaser({
             {top?.matchIds.length
               ? leaders.length > 1
                 ? `${leaders.length}-way tie`
-                : f?.name
+                : f && <PlayerName friend={f} />
               : "Throne unclaimed"}
           </strong>
           <small>SOLE 10TH-PLACE FINISHES</small>
@@ -100,9 +100,10 @@ export function CourtAwards({ data }: { data: DashboardData }) {
       ? award.key === "best-kd" || award.key === "worst-kd"
       : award.key !== "best-kd" && award.key !== "worst-kd",
   );
-  const [selected, setSelected] = useState<Award | null>(null),
+  const [selectedKey, setSelectedKey] = useState<AwardKey | null>(null),
     [player, setPlayer] = useState<string | null>(null),
     [rules, setRules] = useState(false);
+  const selected = awards.find((award) => award.key === selectedKey);
   const inspected = selected?.entries.find((e) => e.playerId === player);
   return (
     <>
@@ -120,7 +121,7 @@ export function CourtAwards({ data }: { data: DashboardData }) {
       <CourtTeaser
         data={data}
         onEnter={() => {
-          setSelected(awards[0]);
+          setSelectedKey(awards[0].key);
           setPlayer(awards[0].entries[0]?.playerId ?? null);
         }}
       />
@@ -193,7 +194,7 @@ export function CourtAwards({ data }: { data: DashboardData }) {
                     <button
                       key={f.id}
                       onClick={() => {
-                        setSelected(award);
+                        setSelectedKey(award.key);
                         setPlayer(f.id);
                       }}
                       className={
@@ -215,7 +216,7 @@ export function CourtAwards({ data }: { data: DashboardData }) {
                             ).padStart(2, "0")}
                       </span>
                       <PlayerDot friend={f} />
-                      <span>{f.name}</span>
+                      <PlayerName friend={f} />
                       <strong>{entry.matchIds.length}</strong>
                       <ArrowUpRight size={14} />
                     </button>
@@ -226,7 +227,7 @@ export function CourtAwards({ data }: { data: DashboardData }) {
                 <span>{award.eligible} qualifying matches</span>
                 <TextLink
                   onClick={() => {
-                    setSelected(award);
+                    setSelectedKey(award.key);
                     setPlayer(award.entries[0]?.playerId ?? null);
                   }}
                 >
@@ -253,8 +254,8 @@ export function CourtAwards({ data }: { data: DashboardData }) {
           <div className="prose">
             <p>
               Only completed, ten-player, two-team Competitive matches inside
-              this act count. Unsupported or incomplete scoreboards are
-              excluded.
+              this act with at least two tracked friends count. Unsupported or
+              incomplete scoreboards are excluded.
             </p>
             <p>
               Placement uses total combat score divided by rounds. All ten
@@ -288,7 +289,7 @@ export function CourtAwards({ data }: { data: DashboardData }) {
       {selected && (
         <Modal
           title={`${selected.title} · Evidence`}
-          onClose={() => setSelected(null)}
+          onClose={() => setSelectedKey(null)}
         >
           <p className="modal-description">
             {selected.description} · {selected.eligible} qualifying matches
@@ -301,7 +302,7 @@ export function CourtAwards({ data }: { data: DashboardData }) {
                 onClick={() => setPlayer(f.id)}
               >
                 <PlayerDot friend={f} />
-                {f.name}
+                <PlayerName friend={f} />
                 <b>
                   {selected.entries.find((e) => e.playerId === f.id)?.matchIds
                     .length ?? 0}

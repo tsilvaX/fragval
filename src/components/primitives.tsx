@@ -3,6 +3,7 @@ import { useEffect, useRef, type ReactNode, type CSSProperties } from "react";
 import { X, ArrowUpRight, Crosshair } from "lucide-react";
 import type { Friend, Aggregate, Match } from "@/lib/model";
 import { aggregate } from "@/lib/stats";
+import { profileAccounts, playerLabel } from "@/lib/player-names";
 import catalog from "@/config/assets.json";
 
 export const metrics = {
@@ -96,6 +97,40 @@ export function AgentImage({
 }
 export function PlayerDot({ friend }: { friend: Friend }) {
   return <i className="player-dot" style={{ background: friend.color }} />;
+}
+export function AccountNames({
+  accounts,
+  showTags = false,
+}: {
+  accounts: { name: string; tag: string }[];
+  showTags?: boolean;
+}) {
+  return (
+    <span className="player-names">
+      {accounts.map((account) => (
+        <span
+          className="player-name-line"
+          key={`${account.name}#${account.tag}`}
+        >
+          {account.name}
+          {showTags && (
+            <small className="account-tag">#{account.tag}</small>
+          )}{" "}
+        </span>
+      ))}
+    </span>
+  );
+}
+export function PlayerName({
+  friend,
+  showTags = false,
+}: {
+  friend: Friend;
+  showTags?: boolean;
+}) {
+  return (
+    <AccountNames accounts={profileAccounts(friend)} showTags={showTags} />
+  );
 }
 export function SectionHeading({
   number,
@@ -215,7 +250,7 @@ export function ComparisonBars({
             </span>
             <div className="bar-player">
               <PlayerDot friend={friend} />
-              <span>{friend.name}</span>
+              <PlayerName friend={friend} />
             </div>
             <div className="bar-track">
               <span className="zero-line" style={{ left: `${zero}%` }} />
@@ -298,7 +333,7 @@ export function TrendChart({
             strokeWidth="2.5"
           >
             <title>
-              {friend.name}: {values.map((v) => fmt(v)).join(", ")} ACS
+              {playerLabel(friend)}: {values.map((v) => fmt(v)).join(", ")} ACS
             </title>
           </polyline>
         ))}
@@ -313,7 +348,7 @@ export function TrendChart({
         {friends.map((f) => (
           <span key={f.id}>
             <PlayerDot friend={f} />
-            {f.name}
+            <PlayerName friend={f} />
           </span>
         ))}
       </div>

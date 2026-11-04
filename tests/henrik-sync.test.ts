@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { HenrikProvider } from "../src/lib/providers/henrik";
+import { HenrikProvider, henrikRosterKey } from "../src/lib/providers/henrik";
+import type { TrackedAccount } from "../src/config/players";
 import { fixtureMatches } from "../src/lib/fixtures";
-import { eligibleMatch } from "../src/lib/stats";
+import { eligibleMatch, aggregate } from "../src/lib/stats";
 
 test("live provider contract resolves the act and PUUIDs, deduplicates shared details, and skips known IDs", async () => {
   const originalFetch = globalThis.fetch;
@@ -25,7 +26,7 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
     accountCalls = 0;
   let pauseStored = false,
     storedCalls = 0;
-  const friends = [0, 1, 2].map((i) => ({
+  const friends: TrackedAccount[] = [0, 1, 2].map((i) => ({
     name: `Friend${i}`,
     tag: "GG",
     color: "#c45734",
@@ -58,6 +59,8 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
       });
     if (url.includes("/v2/account/")) {
       accountCalls++;
+      if (url.includes("FriendAlt1"))
+        return Response.json({ data: { puuid: "live-alt-1", region: "eu" } });
       const i = url.match(/Friend(\d)/)?.[1];
       return Response.json({
         data: { puuid: `live-friend-${i}`, region: "eu" },
@@ -83,6 +86,17 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
         });
       return Response.json({
         data: [
+          ...(url.includes("live-alt-1")
+            ? [
+                {
+                  meta: {
+                    id: "alt-match",
+                    started_at: now,
+                    season: { id: "live-act" },
+                  },
+                },
+              ]
+            : []),
           {
             meta: {
               id: "shared-match",
@@ -103,10 +117,11 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
     }
     if (url.includes("/v4/match/")) {
       detailCalls++;
+      const alternate = url.endsWith("/alt-match");
       return Response.json({
         data: {
           metadata: {
-            match_id: "shared-match",
+            match_id: alternate ? "alt-match" : "shared-match",
             started_at: now,
             is_completed: true,
             map: { name: "Ascent" },
@@ -118,7 +133,12 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
             { team_id: "opaque-blue", rounds: { won: source.blue } },
           ],
           players: source.players.map((p, i) => ({
-            puuid: i < 3 ? `live-friend-${i}` : `untracked-secret-${i}`,
+            puuid:
+              alternate && i === 1
+                ? "live-alt-1"
+                : i < 3
+                  ? `live-friend-${i}`
+                  : `untracked-secret-${i}`,
             name: "private-name",
             tag: "PRIVATE",
             team_id: p.team === "Red" ? "opaque-red" : "opaque-blue",
@@ -158,6 +178,25 @@ test("live provider contract resolves the act and PUUIDs, deduplicates shared de
     assert.equal(second.matches.length, 0);
     assert.equal(detailCalls, 1);
     assert.equal(accountCalls, 3);
+    const originalRosterKey = henrikRosterKey(friends);
+    friends[1].aliases = [{ name: "FriendAlt1", tag: "ALT" }];
+    assert.notEqual(henrikRosterKey(friends), originalRosterKey);
+    const linked = await provider.sync(new Set(["shared-match"]));
+    assert.equal(linked.friends.length, 3);
+    assert.deepEqual(
+      linked.friends[1].accounts?.map((a) => a.id),
+      ["live-friend-1", "live-alt-1"],
+    );
+    assert.equal(linked.matches.length, 1);
+    assert.equal(linked.matches[0].players[1].id, "live-friend-1");
+    assert.equal(linked.matches[0].players[1].name, "FriendAlt1#ALT");
+    assert.equal(linked.matches[0].rosterKey, henrikRosterKey(friends));
+    assert.equal(
+      aggregate([...first.matches, ...linked.matches], "live-friend-1").matches,
+      2,
+    );
+    assert.equal(linked.friends[1].rank, "Diamond 1");
+    assert.equal(accountCalls, 4);
     pauseStored = true;
     storedCalls = 0;
     const partial = await provider.sync(new Set());

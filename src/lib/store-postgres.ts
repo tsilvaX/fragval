@@ -66,6 +66,9 @@ export function createPostgresStore(url: string): CourtStore {
           SELECT ${mode}, entry->>'id', entry->>'actId', entry
           FROM jsonb_array_elements(${JSON.stringify(snapshot.matches)}::jsonb) AS entry
           ON CONFLICT (mode, id) DO NOTHING RETURNING id`,
+        sql`UPDATE court_matches m SET act = entry->>'actId', payload = entry
+          FROM jsonb_array_elements(${JSON.stringify(snapshot.matches)}::jsonb) AS entry
+          WHERE m.mode = ${mode} AND m.id = entry->>'id' AND m.payload IS DISTINCT FROM entry`,
         sql`INSERT INTO court_snapshots (mode, payload, last_sync)
           VALUES (${mode}, ${JSON.stringify({ ...snapshot, matches: [] })}::jsonb, now())
           ON CONFLICT (mode) DO UPDATE SET payload = EXCLUDED.payload, last_sync = EXCLUDED.last_sync`,

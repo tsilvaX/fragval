@@ -30,6 +30,18 @@ test("SQLite deduplicates match IDs, keeps provider namespaces separate, and fil
   assert.equal(saveSnapshot("fixture", snapshot), 36);
   assert.equal(saveSnapshot("fixture", snapshot), 0);
   assert.equal(readSnapshot("fixture")?.matches.length, 36);
+  const corrected = structuredClone(snapshot.matches[0]);
+  corrected.rosterKey = "linked-roster";
+  corrected.players[1].id = "linked-profile";
+  assert.equal(
+    saveSnapshot("fixture", { ...snapshot, matches: [corrected] }),
+    0,
+  );
+  assert.equal(readSnapshot("fixture")?.matches.length, 36);
+  assert.deepEqual(
+    readSnapshot("fixture")?.matches.find((m) => m.id === corrected.id),
+    corrected,
+  );
   assert.equal(readSnapshot("henrik"), null);
   assert.equal(saveSnapshot("henrik", snapshot), 36);
   assert.equal(readSnapshot("henrik")?.matches.length, 36);
