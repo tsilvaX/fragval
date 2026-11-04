@@ -13,6 +13,7 @@ import { fixtureAct, fixtureMatches } from "../src/lib/fixtures";
 import type { Match } from "../src/lib/model";
 function match(): Match {
   const m = structuredClone(fixtureMatches()[1]);
+  m.mvpIds = ["p0"];
   m.players.forEach((p, i) => {
     p.id = `p${i}`;
     p.score = (300 - i * 20) * p.rounds;
@@ -35,6 +36,28 @@ test("match MVP and top kills are distinct awards", () => {
   m.players[5].kills = 40;
   assert.equal(award([m], "mvp").entries[0].playerId, "p0");
   assert.equal(award([m], "fragger").entries[0].playerId, "p5");
+});
+test("official MVP overrides ACS and missing MVP data is never guessed", () => {
+  const m = match();
+  m.mvpIds = ["p5"];
+  assert.deepEqual(
+    award([m], "mvp").entries.find((e) => e.playerId === "p5")!.matchIds,
+    [m.id],
+  );
+  assert.equal(
+    award([m], "mvp").entries.find((e) => e.playerId === "p0")!.matchIds.length,
+    0,
+  );
+  assert.deepEqual(
+    award([m], "bottom").entries.find((e) => e.playerId === "p9")!.matchIds,
+    [m.id],
+  );
+  for (const ids of [undefined, [], ["not-a-participant"]]) {
+    m.mvpIds = ids;
+    assert.equal(award([m], "mvp").eligible, 0);
+    assert.ok(award([m], "mvp").entries.every((e) => e.matchIds.length === 0));
+    assert.equal(aggregate([m], "p0").matches, 1);
+  }
 });
 
 test("K/D awards use ratios across the full lobby and ignore assists and combat score", () => {
@@ -169,6 +192,7 @@ test("tied leaders share MVP and highest-kill awards", () => {
   const m = match();
   m.players[5].score = m.players[0].score;
   m.players[5].kills = m.players[0].kills;
+  m.mvpIds = ["p0", "p5"];
   assert.equal(placement(m.players[5], m), 1);
   assert.equal(placement(m.players[1], m), 3);
   for (const key of ["mvp", "fragger"]) {

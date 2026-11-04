@@ -31,6 +31,7 @@ const rawMatch = z.object({
     map: z.object({ name: z.string() }),
     season: z.object({ id: z.string() }),
     queue: z.object({ id: z.string() }),
+    mvp: z.object({ puuid: z.string() }).nullish(),
   }),
   teams: z.array(
     z.object({ team_id: z.string(), rounds: z.object({ won: count }) }),
@@ -40,6 +41,9 @@ const rawMatch = z.object({
       puuid: z.string(),
       team_id: z.string(),
       agent: z.object({ name: z.string() }),
+      performance: z
+        .object({ score: z.number().finite().min(0).max(500).nullish() })
+        .nullish(),
       stats: z.object({
         kills: count,
         deaths: count,
@@ -62,7 +66,7 @@ export function normalizeHenrik(raw: unknown, friends: Friend[]): Match {
     throw new Error("Duplicate participant identifiers");
   const [red, blue] = m.teams;
   const rounds = red.rounds.won + blue.rounds.won;
-  return {
+  const match: Match = {
     id: m.metadata.match_id,
     actId: m.metadata.season.id,
     startedAt: m.metadata.started_at,
@@ -90,6 +94,7 @@ export function normalizeHenrik(raw: unknown, friends: Friend[]): Match {
         deaths: p.stats.deaths,
         assists: p.stats.assists,
         score: p.stats.score,
+        performanceScore: p.performance?.score ?? null,
         rounds,
         damage: p.stats.damage?.dealt ?? null,
         received: p.stats.damage?.received ?? null,
@@ -99,6 +104,20 @@ export function normalizeHenrik(raw: unknown, friends: Friend[]): Match {
       };
     }),
   };
+  const reported = m.players.findIndex(
+    (p) => p.puuid === m.metadata.mvp?.puuid,
+  );
+  if (reported >= 0) match.mvpIds = [match.players[reported].id];
+  else if (
+    !m.metadata.mvp &&
+    match.players.every((p) => p.performanceScore != null)
+  ) {
+    const highest = Math.max(...match.players.map((p) => p.performanceScore!));
+    match.mvpIds = match.players
+      .filter((p) => p.performanceScore === highest)
+      .map((p) => p.id);
+  } else match.mvpIds = [];
+  return match;
 }
 export class HenrikProvider implements MatchProvider {
   constructor(

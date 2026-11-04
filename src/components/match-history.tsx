@@ -54,6 +54,11 @@ export function Scoreboard({
                 <MetricLabel metric="acs" />
               </th>
               <th>
+                <abbr title="Riot Performance Score. Determines the official Match MVP; ACS is shown separately.">
+                  PERF
+                </abbr>
+              </th>
+              <th>
                 <MetricLabel metric="adr" />
               </th>
               <th>
@@ -82,6 +87,7 @@ export function Scoreboard({
                         <small>
                           {p.agent}
                           {f ? " · TRACKED FRIEND" : " · ANONYMOUS"}
+                          {match.mvpIds?.includes(p.id) && " · MATCH MVP"}
                         </small>
                       </div>
                       {f && <PlayerDot friend={f} />}
@@ -99,6 +105,7 @@ export function Scoreboard({
                   <td>{p.deaths}</td>
                   <td>{p.assists}</td>
                   <td>{fmt(a.acs)}</td>
+                  <td>{fmt(p.performanceScore ?? null)}</td>
                   <td>{fmt(a.adr)}</td>
                   <td>
                     {a.delta !== null && a.delta > 0 ? "+" : ""}

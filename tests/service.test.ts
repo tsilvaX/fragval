@@ -38,11 +38,14 @@ test("service never substitutes demo for failed live data and never serves an ex
     const migrated = fixtureMatches();
     migrated[0].rosterKey = henrikRosterKey();
     const legacy = structuredClone(migrated[1]);
+    const missingMvp = structuredClone(migrated[2]);
+    missingMvp.rosterKey = henrikRosterKey();
+    delete missingMvp.mvpIds;
     legacy.players[0].id = "anonymous-legacy";
     saveSnapshot("henrik", {
       act: liveAct,
       friends: fixtureFriends,
-      matches: [migrated[0], legacy],
+      matches: [migrated[0], legacy, missingMvp],
       coverage: "legacy mappings",
       warnings: [],
     });
@@ -58,11 +61,13 @@ test("service never substitutes demo for failed live data and never serves an ex
         calls++;
         assert.ok(knownIds.has(migrated[0].id));
         assert.equal(knownIds.has(legacy.id), calls > 1);
+        assert.equal(knownIds.has(missingMvp.id), calls > 1);
         migrated[1].rosterKey = henrikRosterKey();
+        migrated[2].rosterKey = henrikRosterKey();
         return {
           act: liveAct,
           friends: fixtureFriends,
-          matches: calls === 1 ? [migrated[1]] : [],
+          matches: calls === 1 ? [migrated[1], migrated[2]] : [],
           coverage: "linked accounts",
           warnings: [],
         };

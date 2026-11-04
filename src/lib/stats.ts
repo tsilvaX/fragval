@@ -118,7 +118,7 @@ export const awardDefinitions: {
     key: "mvp",
     title: "Match MVP",
     description:
-      "Highest combat score in the entire lobby. Equal leaders share the award.",
+      "Official match MVP from the provider, using Riot Performance Score when MVP metadata is absent. ACS does not decide this award.",
   },
   {
     key: "fragger",
@@ -180,6 +180,15 @@ export function calculateAwards(
       );
       const group = def.key === "carry" || def.key === "liability";
       if (group ? friends.length < 2 : friends.length < 1) continue;
+      if (def.key === "mvp") {
+        const winners =
+          m.mvpIds?.filter((id) => m.players.some((p) => p.id === id)) ?? [];
+        if (!winners.length) continue;
+        eligible++;
+        for (const entry of entries)
+          if (winners.includes(entry.playerId)) entry.matchIds.push(m.id);
+        continue;
+      }
       eligible++;
       const pool = group ? friends : m.players;
       const values = pool.map(valueOf).filter((v) => v !== null);

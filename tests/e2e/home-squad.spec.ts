@@ -37,6 +37,7 @@ function dashboard(carrierIndex: number): DashboardData {
         p.kills = i === carrierIndex ? 30 : 5 + i;
         p.deaths = 10;
       });
+      m.mvpIds = [friends[carrierIndex].id];
       return m;
     }),
   };
@@ -290,4 +291,58 @@ test("bottom counter and open evidence update after refresh and exclude solo gam
   await page.getByRole("button", { name: "Close dialog" }).click();
   await page.getByRole("navigation").locator("a[href='#matches']").click();
   await expect(page.locator(".match-item")).toHaveCount(2);
+});
+
+test("MVP backfill credits the reported winner instead of the highest ACS", async ({
+  page,
+}) => {
+  const initial = dashboard(0);
+  initial.matches = initial.matches.slice(0, 1);
+  initial.matches[0].id = "55605f20-4212-4a83-b4e3-4d2725bc3a07";
+  delete initial.matches[0].mvpIds;
+  const repaired = structuredClone(initial);
+  repaired.matches[0].mvpIds = [repaired.friends[3].id];
+  repaired.matches[0].players[3].performanceScore = 324.4554;
+  await page.route("**/api/dashboard*", (route) =>
+    route.fulfill({ json: initial }),
+  );
+  await page.route("**/api/refresh*", (route) =>
+    route.fulfill({ json: { added: 0, data: repaired } }),
+  );
+  await page.goto("/?demo=1#court");
+  await expect(page.getByRole("status")).toContainText(
+    "MVP data verified for 0 of 1 shared games",
+  );
+  const mvpCard = page
+    .locator(".award-card")
+    .filter({
+      has: page.getByRole("heading", { name: "Match MVP", exact: true }),
+    });
+  await expect(mvpCard.locator(".award-foot")).toContainText(
+    "0 qualifying matches",
+  );
+  await page.getByRole("button", { name: "REFRESH STATS" }).click();
+  const winner = mvpCard
+    .locator(".award-ranking button")
+    .filter({ hasText: "kotooriiii" });
+  await expect(winner.locator("strong")).toHaveText("1");
+  await expect(
+    mvpCard
+      .locator(".award-ranking button")
+      .filter({ hasText: "Mini Wo0t" })
+      .locator("strong"),
+  ).toHaveText("0");
+  await winner.click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.locator(".match-item")).toHaveCount(1);
+  await dialog.locator(".match-summary").click();
+  await expect(
+    dialog.locator(".tracked-row").filter({ hasText: "kotooriiii" }),
+  ).toContainText("MATCH MVP");
+  await expect(
+    dialog.locator(".tracked-row").filter({ hasText: "kotooriiii" }),
+  ).toContainText("324");
+  await expect(
+    dialog.getByRole("columnheader", { name: "PERF" }),
+  ).toBeVisible();
 });

@@ -30,6 +30,11 @@ function game(index: number, scores = [400, 250, 200, 100], win = true) {
     p.deaths = 10;
     p.assists = 100 * i;
   });
+  m.mvpIds = m.players
+    .filter(
+      (p) => p.score === Math.max(...m.players.map((other) => other.score)),
+    )
+    .map((p) => p.id);
   return m;
 }
 const keys = (result: ReturnType<typeof squadInsights>, id: string) =>

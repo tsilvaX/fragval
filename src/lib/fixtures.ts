@@ -77,6 +77,11 @@ export function fixtureMatches(): Match[] {
       red,
       blue,
       players,
+      mvpIds: players
+        .filter(
+          (p) => p.score === Math.max(...players.map((other) => other.score)),
+        )
+        .map((p) => p.id),
     };
   });
 }

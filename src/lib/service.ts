@@ -30,10 +30,31 @@ function prepareDashboard(data: DashboardData): DashboardData {
   if (data.mode === "fixture")
     return {
       ...data,
+      matches: data.matches.map((m) =>
+        m.mvpIds !== undefined
+          ? m
+          : {
+              ...m,
+              mvpIds: m.players
+                .filter(
+                  (p) =>
+                    p.score ===
+                    Math.max(...m.players.map((other) => other.score)),
+                )
+                .map((p) => p.id),
+            },
+      ),
       coverage: `${data.matches.length} deterministic shared exhibition matches. Fictional accounts and results; this is not live VALORANT data.`,
     };
+  const pendingMvp = data.matches.filter((m) => m.mvpIds === undefined).length;
   return {
     ...data,
+    warnings: pendingMvp
+      ? [
+          ...data.warnings,
+          `${pendingMvp} cached shared matches are awaiting official MVP data. Refresh again to continue updating history. These matches are excluded from MVP totals until verified.`,
+        ]
+      : data.warnings,
     friends: data.friends.map((friend) => ({
       ...friend,
       agent: agentStats(data.matches, friend.id)[0]?.agent ?? "Unknown",
@@ -63,9 +84,21 @@ export async function synchronize(demo = false): Promise<{
     // A roster change can turn an anonymous participant into a linked account.
     // Revisit old mappings until every available scoreboard is updated, even
     // when the provider's budget spreads this work across multiple refreshes.
+    const sharedIds = new Set(
+      sharedMatches(
+        previous?.matches ?? [],
+        previous?.friends.map((f) => f.id) ?? [],
+        previous?.act ?? fixtureAct,
+      ).map((m) => m.id),
+    );
     const normalizedIds = new Set(
       previous?.matches
-        .filter((m) => mode !== "henrik" || m.rosterKey === rosterKey)
+        .filter(
+          (m) =>
+            mode !== "henrik" ||
+            (m.rosterKey === rosterKey &&
+              (!sharedIds.has(m.id) || m.mvpIds !== undefined)),
+        )
         .map((m) => m.id),
     );
     const snapshot =

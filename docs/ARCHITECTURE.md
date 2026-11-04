@@ -48,7 +48,7 @@ Each configured profile may own multiple account identities. All linked PUUID hi
 Scoreboard ordering uses ACS (equivalent to total score when everyone has the same denominator). Equal scores share competition placement: 1, 1, 3. Stable ID sorting affects display order only, not awards.
 
 - **Bottom Frag King:** sole rank 10 among all ten players. A tie for last does not qualify.
-- **Match MVP:** every player tied for highest combat score.
+- **Match MVP:** the provider-reported official MVP, which follows Riot Performance Score rather than ACS. If explicit MVP metadata is absent, all ten reported performance scores must be available before highest-score ties can receive credit. Missing MVP data is excluded, never inferred from ACS. The scoreboard retains ACS order for bottom-frag evidence and shows Performance Score and the official MVP separately.
 - **Lobby Top Fragger:** every player tied for most kills, independently of combat score.
 - **Friend Group Carry / Liability:** every friend tied for highest/lowest combat score within the tracked participants. Requires at least two tracked friends.
 

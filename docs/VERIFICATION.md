@@ -1,5 +1,7 @@
 # Verification record
 
+The reported match `55605f20-4212-4a83-b4e3-4d2725bc3a07` was present in production, with Mini Wo0t, kotoris kitten and kotooriiii tracked. The provider reported kotooriiii as MVP, while the old ACS-based calculation incorrectly credited nobody in the squad. Regression coverage now verifies authoritative MVP metadata, complete Performance Score fallback, unavailable data without ACS guessing, anonymized untracked winners, cache re-import, and browser evidence after backfill. Bottom Frag King remains based on sole lowest ACS.
+
 The shared-match regression requires at least two tracked friends for displayed statistics and awards, including legacy caches and refresh cooldown responses. Tests cover solo exclusions, unique match IDs, new shared-match counts, and an open Bottom Frag King evidence panel updating during refresh on desktop and mobile. Bottom Frag King retains the sole lowest combat score rule across all ten participants.
 
 Account-linking regressions cover primary and alternate history retrieval, one canonical profile, combined statistics and awards, solo exclusions, duplicate match IDs, primary-account rank, and rebuilding cached anonymous participants across multiple refreshes. Desktop and mobile profile tests check the linked-account label and the alternate Riot ID in the combined history.

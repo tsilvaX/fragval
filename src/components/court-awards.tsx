@@ -105,6 +105,7 @@ export function CourtAwards({ data }: { data: DashboardData }) {
     [rules, setRules] = useState(false);
   const selected = awards.find((award) => award.key === selectedKey);
   const inspected = selected?.entries.find((e) => e.playerId === player);
+  const mvpCoverage = awards.find((award) => award.key === "mvp")!.eligible;
   return (
     <>
       <SectionHeading
@@ -125,6 +126,13 @@ export function CourtAwards({ data }: { data: DashboardData }) {
           setPlayer(awards[0].entries[0]?.playerId ?? null);
         }}
       />
+      {mvpCoverage < data.matches.length && (
+        <p className="chart-note" role="status">
+          MVP data verified for {mvpCoverage} of {data.matches.length} shared
+          games. Missing MVP results are excluded. Refresh stats to continue
+          updating history.
+        </p>
+      )}
       <div className="metric-tabs" role="tablist" aria-label="Court categories">
         {(["awards", "kd"] as const).map((id) => (
           <button
@@ -263,9 +271,12 @@ export function CourtAwards({ data }: { data: DashboardData }) {
               Equal scores share competition placement (1, 1, 3).
             </p>
             <p>
-              Match MVP, kill leader and friend-group awards credit all tied
-              leaders. Bottom Frag King requires sole 10th place: a tie for last
-              has rank 9 or better and receives no credit.
+              Match MVP uses the provider's official MVP, or the highest
+              reported Riot Performance Score when explicit MVP metadata is
+              absent. Games without either are excluded from MVP counts. ACS
+              does not determine MVP. Kill leader and friend-group awards credit
+              all tied leaders. Bottom Frag King requires sole 10th place: a tie
+              for last has rank 9 or better and receives no credit.
             </p>
             <p>
               Best K/D and Worst K/D compare kills divided by deaths across the

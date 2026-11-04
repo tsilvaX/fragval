@@ -85,6 +85,78 @@ test("nonconsenting player IDs and names are discarded before storage", () => {
   assert.ok(!payload.includes('"p1"'));
   assert.equal(m.players[0].name, "Player 1");
 });
+test("reported match 55605f20 credits kotooriiii despite another player's higher ACS", () => {
+  const source = raw();
+  const scores = [2930, 5694, 5790, 5413, 3663, 5979, 3987, 2722, 5204, 4165];
+  const performance = [
+    208.0437, 301.8715, 307.2148, 324.4554, 151.0897, 299.187, 178.8261,
+    135.736, 264.3935, 217.0065,
+  ];
+  const friends: Friend[] = ["Mini Wo0t", "kotoris kitten", "kotooriiii"].map(
+    (name, i) => ({
+      id: `p${i + 1}`,
+      name,
+      tag: ["ESP1", "6874", "4236"][i],
+      color: "#fff",
+      rank: null,
+      agent: "Unknown",
+    }),
+  );
+  const input = {
+    ...source,
+    metadata: {
+      ...source.metadata,
+      match_id: "55605f20-4212-4a83-b4e3-4d2725bc3a07",
+      mvp: { puuid: "p3" } as { puuid: string } | null,
+    },
+    teams: [
+      { team_id: "opaque-team-A", rounds: { won: 10 } },
+      { team_id: "opaque-team-B", rounds: { won: 13 } },
+    ],
+    players: scores.map((score, i) => ({
+      ...source.players[0],
+      puuid: `p${i}`,
+      team_id: [0, 1, 2, 3, 8].includes(i) ? "opaque-team-B" : "opaque-team-A",
+      stats: { ...source.players[0].stats, score },
+      performance: { score: performance[i] as number | null },
+    })),
+  };
+  const act = {
+    id: "act-1",
+    name: "test",
+    startsAt: "2026-10-01T00:00:00Z",
+    endsAt: "2026-11-01T00:00:00Z",
+    source: "test",
+  };
+  const match = normalizeHenrik(input, friends);
+  assert.deepEqual(match.mvpIds, ["p3"]);
+  assert.equal(match.players[3].performanceScore, 324.4554);
+  const mvp = calculateAwards(
+    [match],
+    friends.map((f) => f.id),
+    act,
+  ).find((a) => a.key === "mvp")!;
+  assert.deepEqual(mvp.entries.find((e) => e.playerId === "p3")!.matchIds, [
+    input.metadata.match_id,
+  ]);
+  assert.equal(
+    mvp.entries.find((e) => e.playerId === "p2")!.matchIds.length,
+    0,
+  );
+  // Official metadata is authoritative even if a performance field is absent.
+  input.players[3].performance.score = null;
+  assert.deepEqual(normalizeHenrik(input, friends).mvpIds, ["p3"]);
+  // No metadata and incomplete performance data must not fall back to ACS.
+  input.metadata.mvp = null;
+  assert.deepEqual(normalizeHenrik(input, friends).mvpIds, []);
+  input.players[3].performance.score = performance[3];
+  assert.deepEqual(normalizeHenrik(input, friends).mvpIds, ["p3"]);
+  // An untracked MVP keeps an anonymous ID, never the raw provider PUUID.
+  input.metadata.mvp = { puuid: "p5" };
+  const anonymousWinner = normalizeHenrik(input, friends);
+  assert.deepEqual(anonymousWinner.mvpIds, [anonymousWinner.players[5].id]);
+  assert.ok(!JSON.stringify(anonymousWinner).includes('"p5"'));
+});
 test("linked accounts combine weighted totals, awards and history under one profile", () => {
   const friends: Friend[] = [
     {

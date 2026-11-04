@@ -38,6 +38,7 @@ export type Participant = {
   deaths: number;
   assists: number;
   score: number;
+  performanceScore?: number | null;
   rounds: number;
   damage: number | null;
   received: number | null;
@@ -47,6 +48,9 @@ export type Participant = {
 };
 export type Match = {
   id: string;
+  // Undefined means this cached match predates MVP metadata support.
+  // An empty list means the provider could not verify its MVP.
+  mvpIds?: string[];
   // Identifies the account mapping used to normalize this cached scoreboard.
   rosterKey?: string;
   actId: string;
