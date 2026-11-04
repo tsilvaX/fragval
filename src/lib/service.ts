@@ -27,25 +27,14 @@ function prepareDashboard(data: DashboardData): DashboardData {
       data.act,
     ),
   };
-  if (data.mode === "fixture")
+  if (data.mode === "fixture") {
+    const currentFixtures = new Map(fixtureMatches().map((m) => [m.id, m]));
     return {
       ...data,
-      matches: data.matches.map((m) =>
-        m.mvpIds !== undefined
-          ? m
-          : {
-              ...m,
-              mvpIds: m.players
-                .filter(
-                  (p) =>
-                    p.score ===
-                    Math.max(...m.players.map((other) => other.score)),
-                )
-                .map((p) => p.id),
-            },
-      ),
+      matches: data.matches.map((m) => currentFixtures.get(m.id) ?? m),
       coverage: `${data.matches.length} deterministic shared exhibition matches. Fictional accounts and results; this is not live VALORANT data.`,
     };
+  }
   const pendingMvp = data.matches.filter((m) => m.mvpIds === undefined).length;
   return {
     ...data,

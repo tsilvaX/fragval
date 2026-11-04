@@ -55,6 +55,10 @@ export function fixtureMatches(): Match[] {
         deaths,
         assists: random(2, 12),
         score: Math.max(70, 100 + kills * 5 + random(-30, 65)) * rounds,
+        performanceScore: Math.min(
+          500,
+          Math.max(0, Math.round(100 + kills * 6 - deaths * 2 + head / 2)),
+        ),
         rounds,
         damage: (60 + kills * 4 + random(0, 35)) * rounds,
         received: (105 + random(0, 45)) * rounds,
@@ -79,7 +83,9 @@ export function fixtureMatches(): Match[] {
       players,
       mvpIds: players
         .filter(
-          (p) => p.score === Math.max(...players.map((other) => other.score)),
+          (p) =>
+            p.performanceScore ===
+            Math.max(...players.map((other) => other.performanceScore!)),
         )
         .map((p) => p.id),
     };

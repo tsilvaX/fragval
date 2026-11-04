@@ -28,6 +28,7 @@
 
 - K/D = sum(kills) / sum(deaths). Undefined ratios show a dash.
 - ACS = sum(total combat score) / sum(rounds).
+- Average Performance Score = mean of the player's reported Riot Performance Scores across retrieved matches, with equal weight per match. This is a dashboard average, not Riot's season rating. Any missing score makes this average unavailable.
 - ADR = sum(damage dealt) / sum(rounds).
 - DDΔ = sum(damage dealt − received) / sum(rounds).
 - HS% = sum(head hits) / sum(head + body + leg hits) × 100.
@@ -45,11 +46,11 @@ Every dashboard view, export and award also requires at least two distinct track
 
 Each configured profile may own multiple account identities. All linked PUUID histories are fetched, but participants normalize to their owner's primary PUUID, so totals, awards, titles, duos and filters combine accounts automatically. Participant names preserve the configured Riot ID used in the game; ranks come from the primary account. All resolved account PUUIDs must be unique. A lobby containing both accounts of one owner is excluded by the unique-participant rule and cannot create a second friend. Each cached match records its roster mapping key. Changing linked accounts causes available old scoreboards to be re-fetched and updated atomically in SQLite or Postgres, preserving match IDs and the new-match count across bounded refreshes.
 
-Scoreboard ordering uses ACS (equivalent to total score when everyone has the same denominator). Equal scores share competition placement: 1, 1, 3. Stable ID sorting affects display order only, not awards.
+Scoreboard ordering and placement use unrounded reported Riot Performance Score (0–500). Equal scores share competition placement: 1, 1, 3. Stable ID sorting affects display order only, not awards. All ten players must have valid scores to assign placements or top/bottom awards. Missing scores never fall back to ACS, kills or zero; partial scoreboards show unavailable placements. Player cards and comparisons default to average Performance Score, with ACS still selectable.
 
-- **Bottom Frag King:** sole rank 10 among all ten players. A tie for last does not qualify.
-- **Match MVP:** the provider-reported official MVP, which follows Riot Performance Score rather than ACS. If explicit MVP metadata is absent, all ten reported performance scores must be available before highest-score ties can receive credit. Missing MVP data is excluded, never inferred from ACS. The scoreboard retains ACS order for bottom-frag evidence and shows Performance Score and the official MVP separately.
-- **Lobby Top Fragger:** every player tied for most kills, independently of combat score.
+- **Bottom Frag King:** sole lowest Riot Performance Score among all ten players. A tie for last does not qualify.
+- **Match MVP:** the provider-reported official MVP, which follows Riot Performance Score rather than ACS. If explicit MVP metadata is absent, all ten reported performance scores must be available before highest-score ties can receive credit. Missing MVP data is excluded, never inferred from ACS. The scoreboard shows Performance Score, ACS and the official MVP separately.
+- **Lobby Top Fragger:** every player tied for highest Riot Performance Score among all ten players.
 - **Friend Group Carry / Liability:** every friend tied for highest/lowest combat score within the tracked participants. Requires at least two tracked friends.
 
 Each category exposes its exact eligible-match denominator and each recipient's match-ID evidence. No group awards are created for solo-friend matches. Unique match IDs prevent double counting across player histories.

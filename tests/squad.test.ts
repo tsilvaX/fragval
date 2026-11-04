@@ -26,6 +26,7 @@ function game(index: number, scores = [400, 250, 200, 100], win = true) {
     p.team = i < 5 ? "Red" : "Blue";
     p.rounds = 22;
     p.score = (scores[i] ?? 160) * 22;
+    p.performanceScore = scores[i] ?? 160;
     p.kills = [20, 15, 10, 5][i] ?? 10;
     p.deaths = 10;
     p.assists = 100 * i;

@@ -40,7 +40,7 @@ export function PlayerCards({
   onPlayer: () => void;
   insights: ReturnType<typeof squadInsights>;
 }) {
-  const [sort, setSort] = useState<MetricKey>("acs");
+  const [sort, setSort] = useState<MetricKey>("performance");
   const stats = data.friends
     .map((f) => ({ friend: f, stats: aggregate(data.matches, f.id) }))
     .sort(
@@ -198,7 +198,7 @@ export function Overview({
   data: DashboardData;
   navigate: (tab: string) => void;
 }) {
-  const [metric, setMetric] = useState<MetricKey>("acs");
+  const [metric, setMetric] = useState<MetricKey>("performance");
   const insights = squadInsights(data.matches, data.friends, data.act);
   const stats = data.friends.map((f) => aggregate(data.matches, f.id));
   const totalKills = stats.reduce((n, s) => n + s.kills, 0);
@@ -312,7 +312,7 @@ export function Overview({
   );
 }
 export function Comparison({ data }: { data: DashboardData }) {
-  const [metric, setMetric] = useState<MetricKey>("acs");
+  const [metric, setMetric] = useState<MetricKey>("performance");
   return (
     <>
       <SectionHeading

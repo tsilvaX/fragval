@@ -8,7 +8,14 @@ import {
   Users,
 } from "lucide-react";
 import type { Friend, Match } from "@/lib/model";
-import { aggregate, placement, scoreboard, won } from "@/lib/stats";
+import {
+  aggregate,
+  placement,
+  scoreboard,
+  won,
+  hasPerformanceScores,
+  performanceScore,
+} from "@/lib/stats";
 import catalog from "@/config/assets.json";
 import { PlayerFilter } from "./player-filter";
 import {
@@ -37,8 +44,12 @@ export function Scoreboard({
   return (
     <div className="scoreboard">
       <div className="scoreboard-intro">
-        <span>FULL LOBBY / COMBAT SCORE ORDER</span>
-        <span>Equal ACS = shared placement</span>
+        <span>FULL LOBBY / RIOT PERFORMANCE SCORE ORDER</span>
+        <span>
+          {hasPerformanceScores(match)
+            ? "Equal Performance Scores = shared placement"
+            : "Incomplete Performance Scores: placements unavailable"}
+        </span>
       </div>
       <div className="table-scroll">
         <table>
@@ -51,12 +62,12 @@ export function Scoreboard({
               <th>D</th>
               <th>A</th>
               <th>
-                <MetricLabel metric="acs" />
-              </th>
-              <th>
                 <abbr title="Riot Performance Score. Determines the official Match MVP; ACS is shown separately.">
                   PERF
                 </abbr>
+              </th>
+              <th>
+                <MetricLabel metric="acs" />
               </th>
               <th>
                 <MetricLabel metric="adr" />
@@ -76,7 +87,7 @@ export function Scoreboard({
                   className={f ? "tracked-row" : ""}
                   style={f ? { borderLeftColor: f.color } : undefined}
                 >
-                  <td>{placement(p, match)}</td>
+                  <td>{placement(p, match) ?? "—"}</td>
                   <td>
                     <div className="scoreboard-player">
                       <AgentImage agent={p.agent} />
@@ -104,8 +115,8 @@ export function Scoreboard({
                   <td>{p.kills}</td>
                   <td>{p.deaths}</td>
                   <td>{p.assists}</td>
+                  <td>{fmt(performanceScore(p))}</td>
                   <td>{fmt(a.acs)}</td>
-                  <td>{fmt(p.performanceScore ?? null)}</td>
                   <td>{fmt(a.adr)}</td>
                   <td>
                     {a.delta !== null && a.delta > 0 ? "+" : ""}
@@ -203,12 +214,12 @@ export function MatchRow({
           <small>K / D / A</small>
         </div>
         <div className="match-acs">
-          <strong>{fmt(stats.acs)}</strong>
-          <small>ACS</small>
+          <strong>{fmt(performanceScore(p))}</strong>
+          <small>PERF</small>
         </div>
         <div className="match-place">
           <strong>
-            {placement(p, match)}
+            {placement(p, match) ?? "—"}
             <span> / 10</span>
           </strong>
           <small>PLACEMENT</small>

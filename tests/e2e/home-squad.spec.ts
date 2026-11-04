@@ -35,6 +35,8 @@ function dashboard(carrierIndex: number): DashboardData {
           (i === carrierIndex ? 450 : i < 4 ? 100 + i * 20 + index * 5 : 200) *
           22;
         p.kills = i === carrierIndex ? 30 : 5 + i;
+        p.performanceScore =
+          i === carrierIndex ? 450 : i < 4 ? 100 + i * 20 + index * 5 : 200;
         p.deaths = 10;
       });
       m.mvpIds = [friends[carrierIndex].id];
@@ -249,7 +251,8 @@ test("bottom counter and open evidence update after refresh and exclude solo gam
   initial.matches = initial.matches.slice(0, 1);
   const first = initial.matches[0];
   first.players[3].score = 50 * first.players[3].rounds;
-  // The documented award uses combat score even when its recipient has many kills.
+  first.players[3].performanceScore = 50;
+  // The award uses reported Performance Score even with many kills.
   first.players[3].kills = 40;
   const next = structuredClone(first);
   next.id = "new-shared-bottom";
@@ -303,6 +306,7 @@ test("MVP backfill credits the reported winner instead of the highest ACS", asyn
   const repaired = structuredClone(initial);
   repaired.matches[0].mvpIds = [repaired.friends[3].id];
   repaired.matches[0].players[3].performanceScore = 324.4554;
+  repaired.matches[0].players[0].performanceScore = 300;
   await page.route("**/api/dashboard*", (route) =>
     route.fulfill({ json: initial }),
   );
@@ -313,11 +317,9 @@ test("MVP backfill credits the reported winner instead of the highest ACS", asyn
   await expect(page.getByRole("status")).toContainText(
     "MVP data verified for 0 of 1 shared games",
   );
-  const mvpCard = page
-    .locator(".award-card")
-    .filter({
-      has: page.getByRole("heading", { name: "Match MVP", exact: true }),
-    });
+  const mvpCard = page.locator(".award-card").filter({
+    has: page.getByRole("heading", { name: "Match MVP", exact: true }),
+  });
   await expect(mvpCard.locator(".award-foot")).toContainText(
     "0 qualifying matches",
   );
@@ -342,7 +344,86 @@ test("MVP backfill credits the reported winner instead of the highest ACS", asyn
   await expect(
     dialog.locator(".tracked-row").filter({ hasText: "kotooriiii" }),
   ).toContainText("324");
+  await expect(dialog.locator("tbody tr").first()).toContainText("kotooriiii");
   await expect(
     dialog.getByRole("columnheader", { name: "PERF" }),
   ).toBeVisible();
+});
+
+test("Performance Score drives top and bottom frag, table order and missing-score coverage", async ({
+  page,
+}) => {
+  const data = dashboard(0);
+  data.matches = data.matches.slice(0, 1);
+  const match = data.matches[0];
+  match.players[0].performanceScore = 1;
+  match.players[1].performanceScore = 500;
+  match.mvpIds = [data.friends[1].id];
+  const incomplete = structuredClone(match);
+  incomplete.id = "missing-opponent-performance";
+  incomplete.players[9].performanceScore = null;
+  data.matches.push(incomplete);
+  await page.route("**/api/dashboard*", (route) =>
+    route.fulfill({ json: data }),
+  );
+  await page.goto("/?demo=1");
+  await expect(
+    page.getByRole("combobox", { name: "Sort players by metric" }),
+  ).toHaveValue("performance");
+  await expect(page.locator(".player-card").first()).toContainText(
+    "HomelessSlayer94",
+  );
+  await page.getByRole("navigation").locator("a[href='#court']").click();
+  await expect(page.getByRole("status")).toContainText(
+    "Complete Performance Scores available for 1 of 2 shared games",
+  );
+  const top = page
+    .locator(".award-card")
+    .filter({
+      has: page.getByRole("heading", {
+        name: "Lobby Top Fragger",
+        exact: true,
+      }),
+    });
+  const bottom = page.locator(".award-card.shame");
+  await expect(
+    top
+      .locator(".award-ranking button")
+      .filter({ hasText: "HomelessSlayer94" })
+      .locator("strong"),
+  ).toHaveText("1");
+  await expect(
+    bottom
+      .locator(".award-ranking button")
+      .filter({ hasText: "Mini Wo0t" })
+      .locator("strong"),
+  ).toHaveText("1");
+  await expect(bottom.locator(".award-foot")).toContainText(
+    "1 qualifying matches",
+  );
+  await bottom.getByRole("button", { name: "Evidence" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.locator(".match-summary").click();
+  await expect(dialog.locator(".match-place strong")).toContainText("10");
+  await expect(dialog.locator("tbody tr").first()).toContainText(
+    "HomelessSlayer94",
+  );
+  await expect(dialog.locator("tbody tr").last()).toContainText("Mini Wo0t");
+  await expect(
+    dialog.locator("tbody tr").last().locator("td").nth(6),
+  ).toHaveText("1");
+  await expect(
+    dialog.locator("tbody tr").last().locator("td").nth(7),
+  ).toHaveText("450");
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("navigation").locator("a[href='#matches']").click();
+  const missing = page.locator(".match-item").nth(1);
+  await expect(missing.locator(".match-place strong")).toContainText("—");
+  await missing.locator(".match-summary").click();
+  await expect(missing.locator(".scoreboard-intro")).toContainText(
+    "placements unavailable",
+  );
+  await expect(missing.locator("tbody tr td:first-child")).toHaveText(
+    Array(10).fill("—"),
+  );
 });

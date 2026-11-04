@@ -44,18 +44,35 @@ export function sharedMatches(
       m.players.filter((p) => ids.has(p.id)).length >= 2,
   );
 }
-// Equal combat scores share a placement. No arbitrary kills/name tie-breaker.
-export function placement(p: Participant, m: Match): number {
+export function performanceScore(p: Participant): number | null {
+  const score = p.performanceScore;
+  return typeof score === "number" &&
+    Number.isFinite(score) &&
+    score >= 0 &&
+    score <= 500
+    ? score
+    : null;
+}
+export function hasPerformanceScores(m: Match): boolean {
+  return (
+    m.players.length === 10 &&
+    m.players.every((p) => performanceScore(p) !== null)
+  );
+}
+// Equal reported Performance Scores share a placement. Never substitute ACS.
+export function placement(p: Participant, m: Match): number | null {
+  if (!hasPerformanceScores(m) || performanceScore(p) === null) return null;
   return (
     1 +
-    m.players.filter((other) => other.score / other.rounds > p.score / p.rounds)
+    m.players.filter((other) => performanceScore(other)! > performanceScore(p)!)
       .length
   );
 }
 export function scoreboard(m: Match): Participant[] {
   return [...m.players].sort(
     (a, b) =>
-      b.score / b.rounds - a.score / a.rounds || a.id.localeCompare(b.id),
+      (performanceScore(b) ?? -Infinity) - (performanceScore(a) ?? -Infinity) ||
+      a.id.localeCompare(b.id),
   );
 }
 export function won(p: Participant, m: Match): boolean {
@@ -95,6 +112,10 @@ export function aggregate(matches: Match[], playerId: string): Aggregate {
     rounds,
     kd: deaths ? kills / deaths : null,
     acs: rounds ? sum((p) => p.score) / rounds : null,
+    performance:
+      entries.length && entries.every(({ p }) => performanceScore(p) !== null)
+        ? sum((p) => performanceScore(p)!) / entries.length
+        : null,
     adr: rounds && damageAvailable ? sum((p) => p.damage!) / rounds : null,
     delta:
       rounds && receivedAvailable
@@ -112,7 +133,7 @@ export const awardDefinitions: {
     key: "bottom",
     title: "Bottom Frag King",
     description:
-      "Sole 10th place by combat score in the entire lobby. The floor is yours.",
+      "Sole lowest Riot Performance Score among all ten players. Tied last places do not count. The floor is yours.",
   },
   {
     key: "mvp",
@@ -124,7 +145,7 @@ export const awardDefinitions: {
     key: "fragger",
     title: "Lobby Top Fragger",
     description:
-      "Most kills among all ten players. Equal leaders share the award.",
+      "Highest Riot Performance Score among all ten players. Equal leaders share the award.",
   },
   {
     key: "carry",
@@ -160,7 +181,8 @@ export function calculateAwards(
   return awardDefinitions.map((def) => {
     const kd = def.key === "best-kd" || def.key === "worst-kd";
     const valueOf = (p: Participant): number | null => {
-      if (def.key === "fragger") return p.kills;
+      if (def.key === "fragger" || def.key === "bottom")
+        return performanceScore(p);
       if (kd)
         return p.deaths > 0
           ? p.kills / p.deaths
@@ -175,6 +197,11 @@ export function calculateAwards(
     }));
     let eligible = 0;
     for (const m of qualifying) {
+      if (
+        (def.key === "bottom" || def.key === "fragger") &&
+        !hasPerformanceScores(m)
+      )
+        continue;
       const friends = m.players.filter(
         (p) => friendIds.includes(p.id) && valueOf(p) !== null,
       );

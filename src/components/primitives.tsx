@@ -7,6 +7,12 @@ import { profileAccounts, playerLabel } from "@/lib/player-names";
 import catalog from "@/config/assets.json";
 
 export const metrics = {
+  performance: {
+    label: "PERF",
+    name: "Average Performance Score",
+    hint: "Mean of reported Riot Performance Scores across retrieved matches, with each match weighted equally. Unavailable if any score in the sample is missing. This is an average, not an official season rating.",
+    digits: 0,
+  },
   acs: {
     label: "ACS",
     name: "Average combat score",

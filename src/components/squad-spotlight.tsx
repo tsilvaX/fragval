@@ -241,10 +241,11 @@ export function SquadSpotlight({
         <p>
           Titles recalculate whenever match data updates. K/D uses total kills ÷
           total deaths, ignoring assists. MVPs use official provider results or
-          Riot Performance Score. Sole bottom finishes use ACS across the entire
-          ten-player lobby. Equal totals share titles; zero awards do not earn
-          one. Mr Consistent measures the lowest relative variation in match
-          ACS, with at least three games per player and two qualifying players.
+          Riot Performance Score. Sole bottom finishes use Riot Performance
+          Score across the entire ten-player lobby. Equal totals share titles;
+          zero awards do not earn one. Mr Consistent measures the lowest
+          relative variation in match ACS, with at least three games per player
+          and two qualifying players.
         </p>
         <p>
           The cart uses the latest ten unique act matches with at least two

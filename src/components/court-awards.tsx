@@ -13,7 +13,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import type { AwardKey, DashboardData } from "@/lib/model";
-import { calculateAwards } from "@/lib/stats";
+import { calculateAwards, hasPerformanceScores } from "@/lib/stats";
 import {
   Modal,
   PlayerDot,
@@ -106,6 +106,7 @@ export function CourtAwards({ data }: { data: DashboardData }) {
   const selected = awards.find((award) => award.key === selectedKey);
   const inspected = selected?.entries.find((e) => e.playerId === player);
   const mvpCoverage = awards.find((award) => award.key === "mvp")!.eligible;
+  const performanceCoverage = data.matches.filter(hasPerformanceScores).length;
   return (
     <>
       <SectionHeading
@@ -131,6 +132,14 @@ export function CourtAwards({ data }: { data: DashboardData }) {
           MVP data verified for {mvpCoverage} of {data.matches.length} shared
           games. Missing MVP results are excluded. Refresh stats to continue
           updating history.
+        </p>
+      )}
+      {performanceCoverage < data.matches.length && (
+        <p className="chart-note" role="status">
+          Complete Performance Scores available for {performanceCoverage} of{" "}
+          {data.matches.length} shared games. Games with missing scores are
+          excluded from top/bottom awards and placements. ACS and kills are not
+          substituted.
         </p>
       )}
       <div className="metric-tabs" role="tablist" aria-label="Court categories">
@@ -266,17 +275,19 @@ export function CourtAwards({ data }: { data: DashboardData }) {
               incomplete scoreboards are excluded.
             </p>
             <p>
-              Placement uses total combat score divided by rounds. All ten
-              players in a supported match share the same round denominator.
-              Equal scores share competition placement (1, 1, 3).
+              Scoreboard placement, Top Fragger and Bottom Frag King use
+              reported Riot Performance Score across all ten players. Equal
+              scores share competition placement (1, 1, 3). Every player must
+              have a valid Performance Score for these rankings; missing scores
+              never fall back to ACS or kills.
             </p>
             <p>
               Match MVP uses the provider's official MVP, or the highest
               reported Riot Performance Score when explicit MVP metadata is
               absent. Games without either are excluded from MVP counts. ACS
-              does not determine MVP. Kill leader and friend-group awards credit
-              all tied leaders. Bottom Frag King requires sole 10th place: a tie
-              for last has rank 9 or better and receives no credit.
+              does not determine MVP. Top Fragger credits all tied highest
+              Performance Scores. Bottom Frag King requires sole 10th place: a
+              tie for last has rank 9 or better and receives no credit.
             </p>
             <p>
               Best K/D and Worst K/D compare kills divided by deaths across the

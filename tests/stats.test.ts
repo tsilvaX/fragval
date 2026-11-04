@@ -8,6 +8,8 @@ import {
   uniqueMatches,
   agentStats,
   sharedMatches,
+  scoreboard,
+  performanceScore,
 } from "../src/lib/stats";
 import { fixtureAct, fixtureMatches } from "../src/lib/fixtures";
 import type { Match } from "../src/lib/model";
@@ -17,6 +19,7 @@ function match(): Match {
   m.players.forEach((p, i) => {
     p.id = `p${i}`;
     p.score = (300 - i * 20) * p.rounds;
+    p.performanceScore = 400 - i * 30;
     p.kills = 20 - i;
   });
   return m;
@@ -31,11 +34,44 @@ test("sole tenth place is measured against all ten, not just the player's team",
   ]);
   assert.equal(a.entries.find((e) => e.playerId === "p5")?.matchIds.length, 0);
 });
-test("match MVP and top kills are distinct awards", () => {
+test("MVP follows its reported winner and top frag follows Performance Score, not kills", () => {
   const m = match();
   m.players[5].kills = 40;
+  m.players[9].performanceScore = 450;
   assert.equal(award([m], "mvp").entries[0].playerId, "p0");
-  assert.equal(award([m], "fragger").entries[0].playerId, "p5");
+  assert.equal(award([m], "fragger").entries[0].playerId, "p9");
+});
+test("scoreboard and bottom frag use Performance Score even when ACS and kills disagree", () => {
+  const m = match();
+  m.players[5].performanceScore = 500;
+  m.players[0].performanceScore = 0;
+  assert.equal(scoreboard(m)[0].id, "p5");
+  assert.equal(placement(m.players[0], m), 10);
+  assert.equal(placement(m.players[5], m), 1);
+  assert.deepEqual(
+    award([m], "bottom").entries.find((e) => e.playerId === "p0")!.matchIds,
+    [m.id],
+  );
+  assert.deepEqual(
+    award([m], "fragger").entries.find((e) => e.playerId === "p5")!.matchIds,
+    [m.id],
+  );
+});
+test("missing or invalid opponent Performance Score excludes full-lobby rankings without ACS fallback", () => {
+  for (const value of [undefined, null, NaN, Infinity, -1, 501]) {
+    const m = match();
+    m.players[4].performanceScore = value;
+    assert.equal(performanceScore(m.players[4]), null);
+    assert.equal(placement(m.players[0], m), null);
+    for (const key of ["bottom", "fragger"]) {
+      const result = award([m], key);
+      assert.equal(result.eligible, 0);
+      assert.ok(result.entries.every((e) => !e.matchIds.length));
+    }
+    assert.equal(award([m], "mvp").eligible, 1);
+    assert.equal(aggregate([m], "p0").matches, 1);
+    assert.equal(scoreboard(m).at(-1)!.id, "p4");
+  }
 });
 test("official MVP overrides ACS and missing MVP data is never guessed", () => {
   const m = match();
@@ -175,6 +211,7 @@ test("bottom counter grows only for new shared matches with a sole tenth finish"
   const tied = structuredClone(next);
   tied.id = "tied-bottom";
   tied.players[8].score = tied.players[9].score;
+  tied.players[8].performanceScore = tied.players[9].performanceScore;
   const count = (matches: Match[]) =>
     award(matches, "bottom").entries.find((e) => e.playerId === "p9")!.matchIds;
   assert.deepEqual(count([first]), [first.id]);
@@ -188,10 +225,11 @@ test("shared and duplicate matches count once, even in the eligible denominator"
   assert.equal(uniqueMatches([m, m]).length, 1);
   assert.equal(aggregate([m, m], "p0").matches, 1);
 });
-test("tied leaders share MVP and highest-kill awards", () => {
+test("tied leaders share MVP and highest-Performance-Score awards", () => {
   const m = match();
   m.players[5].score = m.players[0].score;
   m.players[5].kills = m.players[0].kills;
+  m.players[5].performanceScore = m.players[0].performanceScore;
   m.mvpIds = ["p0", "p5"];
   assert.equal(placement(m.players[5], m), 1);
   assert.equal(placement(m.players[1], m), 3);
@@ -203,6 +241,7 @@ test("tied leaders share MVP and highest-kill awards", () => {
 test("tied last place is not sole tenth, but group liability is shared", () => {
   const m = match();
   m.players[5].score = m.players[9].score;
+  m.players[5].performanceScore = m.players[9].performanceScore;
   assert.equal(placement(m.players[9], m), 9);
   assert.equal(
     award([m], "bottom").entries.every((e) => !e.matchIds.length),
@@ -277,11 +316,14 @@ test("ACS, ADR and delta weight rounds, headshots weight hits, K/D uses totals",
   q.body = 89;
   q.leg = 0;
   p.kills = 10;
+  p.performanceScore = 100;
+  q.performanceScore = 400;
   p.deaths = 2;
   q.kills = 20;
   q.deaths = 18;
   const s = aggregate([a, b], "p0");
   assert.equal(s.acs, 150);
+  assert.equal(s.performance, 250);
   assert.equal(s.adr, 125);
   assert.equal(s.delta, 0);
   assert.equal(s.hs, 10);
@@ -293,10 +335,12 @@ test("missing source statistics remain null rather than becoming zero", () => {
   const m = match();
   m.players[0].damage = null;
   m.players[0].head = null;
+  m.players[0].performanceScore = null;
   const s = aggregate([m], "p0");
   assert.equal(s.adr, null);
   assert.equal(s.delta, null);
   assert.equal(s.hs, null);
+  assert.equal(s.performance, null);
 });
 test("draws count in matches and win rate but do not become losses", () => {
   const a = match(),
@@ -318,6 +362,7 @@ test("zero deaths are explicit, and empty samples have no fabricated round stats
   assert.equal(aggregate([m], "p0").kd, null);
   const s = aggregate([], "none");
   assert.equal(s.matches, 0);
+  assert.equal(s.performance, null);
   assert.equal(s.kd, null);
   assert.equal(s.acs, null);
   assert.equal(s.hs, null);

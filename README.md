@@ -28,11 +28,11 @@ If you do not have a key yet, run `npm run dev` and use the connection screen. T
 
 ## What works
 
-- Overview: sortable player cards; weighted ACS, K/D, ADR, win rate, hit-based HS%, damage delta, W/L and K/D/A totals.
+- Overview: player cards default to average Riot Performance Score; selectable weighted ACS, K/D, ADR, win rate, hit-based HS%, damage delta, W/L and K/D/A totals.
 - Home reputations: Aimlabs (best total K/D), All Brain No Aim (worst total K/D), Main Character (most lobby MVPs), I can't hear you from down here! (most sole bottom finishes), and Mr Consistent (lowest relative ACS variation, minimum three matches). Tap a title for its evidence and calculation. Ties share titles; empty samples earn none.
 - Partners in Crime: two disjoint duo pairings chosen from same-team results, with a three-game minimum and sample-adjusted win rates. The illustrated squad cart assigns its puller from combat-score advantage over tracked teammates in the latest ten shared games. Faces follow player names; titles, pairings and the driver recalculate when refreshed data arrives. Motion can be paused and respects reduced-motion preferences.
 - Head to head: zero-based comparative bars, signed damage deltas, a side-by-side table, ACS trends, and agent leaders with a five-match threshold.
-- The Court: full-lobby Bottom Frag King by ACS, official Match MVP using Riot Performance Score, kill leader, friend-group carry and liability, plus a K/D tab for best and worst kills-to-deaths ratio per match, excluding assists. Inspect each player's contributing matches. MVP coverage is shown while older cached matches are re-imported; unavailable MVP data is never inferred from ACS.
+- The Court: full-lobby Bottom Frag King and Top Fragger by Riot Performance Score, official Match MVP, friend-group carry and liability, plus a K/D tab for best and worst kills-to-deaths ratio per match, excluding assists. Scoreboards and match placements use Performance Score, with ACS shown separately. Top/bottom awards require all ten scores; unavailable data is never inferred from ACS or kills. Inspect each player's contributing matches and data coverage.
 - History: unique matches with at least two tracked friends, player/map/result filters, pagination, and ten-player scoreboards with tracked-friend highlights. Solo games are excluded from all displayed stats, awards and exports, including previously cached results.
 - Agents: weighted per-agent aggregates, sample indicators and cross-friend comparisons.
 - Armory: actual all-weapons hit-region counts. Weapon-specific metrics explicitly remain unavailable.

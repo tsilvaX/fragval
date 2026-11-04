@@ -209,6 +209,10 @@ test("linked accounts combine weighted totals, awards and history under one prof
     friends,
   );
   alternate.players[0].kills = 30;
+  for (const m of [primary, alternate])
+    m.players.forEach((p, i) => {
+      p.performanceScore = i === 0 ? 50 : 200 + i;
+    });
   const matches = [primary, alternate, alternate];
   assert.equal(alternate.players[0].id, "primary");
   assert.equal(alternate.players[0].name, "breedableboy24#1234");

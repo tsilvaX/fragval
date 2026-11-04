@@ -84,7 +84,7 @@ export function squadInsights(matches: Match[], friends: Friend[], act: Act) {
         detail:
           key === "mvp"
             ? `Most verified match MVPs: ${entry.value}. Uses the provider's official MVP or reported Riot Performance Score, not ACS. Matches without verified MVP data do not count. Tied totals share the title.`
-            : `Most sole bottom finishes: ${entry.value}. Sole 10th place by combat score across all ten players. Tied last places do not count. Tied totals share the title.`,
+            : `Most sole bottom finishes: ${entry.value}. Sole 10th place by Riot Performance Score across all ten players. Tied last places do not count. Tied totals share the title.`,
       });
     }
   }

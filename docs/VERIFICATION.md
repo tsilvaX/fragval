@@ -1,26 +1,28 @@
 # Verification record
 
-The reported match `55605f20-4212-4a83-b4e3-4d2725bc3a07` was present in production, with Mini Wo0t, kotoris kitten and kotooriiii tracked. The provider reported kotooriiii as MVP, while the old ACS-based calculation incorrectly credited nobody in the squad. Regression coverage now verifies authoritative MVP metadata, complete Performance Score fallback, unavailable data without ACS guessing, anonymized untracked winners, cache re-import, and browser evidence after backfill. Bottom Frag King remains based on sole lowest ACS.
+Performance Score ranking regressions verify full-lobby scoreboard order and placements, highest-score top frag, sole lowest-score bottom frag, exact ties, and exclusion when an opponent's score is missing or invalid. ACS and kill leaders deliberately disagree with Performance Score in these tests. Browser coverage checks ranking/evidence, default average-performance sorting, and incomplete-scoreboard notices on desktop and mobile.
 
-The shared-match regression requires at least two tracked friends for displayed statistics and awards, including legacy caches and refresh cooldown responses. Tests cover solo exclusions, unique match IDs, new shared-match counts, and an open Bottom Frag King evidence panel updating during refresh on desktop and mobile. Bottom Frag King retains the sole lowest combat score rule across all ten participants.
+The reported match `55605f20-4212-4a83-b4e3-4d2725bc3a07` was present in production, with Mini Wo0t, kotoris kitten and kotooriiii tracked. The provider reported kotooriiii as MVP, while the old ACS-based calculation incorrectly credited nobody in the squad. Regression coverage verifies authoritative MVP metadata, complete Performance Score fallback, unavailable data without ACS guessing, anonymized untracked winners, cache re-import, and browser evidence after backfill. Top and bottom placements now use Performance Score as well.
+
+The shared-match regression requires at least two tracked friends for displayed statistics and awards, including legacy caches and refresh cooldown responses. Tests cover solo exclusions, unique match IDs, new shared-match counts, and an open Bottom Frag King evidence panel updating during refresh on desktop and mobile. Bottom Frag King requires sole lowest Performance Score across all ten participants.
 
 Account-linking regressions cover primary and alternate history retrieval, one canonical profile, combined statistics and awards, solo exclusions, duplicate match IDs, primary-account rank, and rebuilding cached anonymous participants across multiple refreshes. Desktop and mobile profile tests check the linked-account label and the alternate Riot ID in the combined history.
 
 Linked-account display checks verify vertically stacked names across all six tabs at desktop, phone and 320px widths, including charts, tables, squad labels, awards, scoreboards, and the history selector. The selector supports pointer and keyboard selection. Existing cached profiles can display configured aliases before their next import.
 
-Validated locally on Windows with Node 26.13.0 and Next.js 16.4.3. CI targets Node 24 LTS on Linux.
+Validated locally on Windows with Node 24.17.0 and Next.js 16.4.3. CI targets Node 24 LTS on Linux.
 
 ## Results
 
 | Boundary | Result | Evidence |
 | --- | --- | --- |
 | TypeScript | Passed | `npm run typecheck` |
-| Statistics, provider contracts, cache, setup and service | 32 tests passed | `npm test` |
-| Browser flows | 9 passed | `npm run test:e2e`; one duplicate mobile width-matrix test intentionally skipped |
+| Statistics, provider contracts, cache, setup and service | 50 tests passed | `npm test` |
+| Browser flows | 23 passed | `npm run test:e2e`; one duplicate mobile width-matrix test intentionally skipped |
 | Production compilation | Passed, no build warnings | `npm run build` |
 | Direct production access | Passed | HTTP 200 without credentials or a WWW-Authenticate challenge |
 | Legacy password setting | Ignored as intended | Direct access still works if an old COURT_PASSWORD environment value remains |
-| Direct page and API | Passed | HTTP 200; 36 unique fixtures returned without credentials |
+| Direct page and API | Passed | HTTP 200; 30 unique shared fixtures returned without credentials |
 | Direct same-origin refresh | Passed | HTTP 200; cached fixtures preserved without credentials |
 | Browser console on production page | Passed | No page errors or console errors |
 | Real HenrikDev connection | Passed | All four Riot IDs resolved; current ranks loaded |

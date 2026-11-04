@@ -74,6 +74,7 @@ export type Aggregate = {
   rounds: number;
   kd: number | null;
   acs: number | null;
+  performance: number | null;
   adr: number | null;
   hs: number | null;
   delta: number | null;
